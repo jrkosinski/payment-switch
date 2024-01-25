@@ -23,6 +23,7 @@ contract PaymentBook
         uint256 orderId;
         address payer;
         uint256 amount;
+        bool refunded;
     }
     
     struct PaymentList 
@@ -31,16 +32,12 @@ contract PaymentBook
         PaymentRecord[] payments;
     }
     
-    constructor() {
-        
-    }
-    
     function addPendingPayment(address receiver, uint256 orderId, address payer, uint256 amount) internal {
         PaymentBucket storage pending = pendingBuckets[receiver];
         pendingBuckets[receiver].paymentList.status = STATE_PENDING;
         
         //add the new payment record to the pending bucket
-        pending.paymentList.payments.push(PaymentRecord(orderId, payer, amount));
+        pending.paymentList.payments.push(PaymentRecord(orderId, payer, amount, false));
         pending.total += amount;
         orderIdsToIndexes[receiver][orderId] = pending.paymentList.payments.length;
         
@@ -105,5 +102,9 @@ contract PaymentBook
     
     function getAmountOwed(address receiver) public view returns (uint256) {
         return toPayOut[receiver]; 
+    }
+    
+    function getPendingPayment(address receiver, uint256 orderId) internal view returns (PaymentRecord storage) {
+        return pendingBuckets[receiver].paymentList.payments[orderIdsToIndexes[receiver][orderId]]; 
     }
 }
