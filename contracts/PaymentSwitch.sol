@@ -1,21 +1,23 @@
 // SPDX-License-Identifier: UNLICENSED
 import "./ManagedSecurity.sol"; 
+import "./PaymentBook.sol"; 
 import "./utils/CarefulMath.sol"; 
 
 //TODO: add security restrictions 
 //TODO: multi-payment orders 
 //TODO: order batches for approval 
 
-contract PaymentSwitch is ManagedSecurity
+
+contract PaymentSwitch is ManagedSecurity, PaymentBook //TODO: compose instead of inherit
 {
+    //how much fee is charged per payment (in bps)
     uint256 public feeBps; 
+    
+    //address to which the fee charged (profit) is sent
     address public vaultAddress;
     
-    //TODO: 1 order id per payment for now, maybe later it will be changed one->many
-    mapping (uint256 => PaymentRecord) payments;
-    
-    //this is the pot where approved funds are stored before sending out 
-    mapping (address => uint256) approvedFunds;
+    //final approval - amount to pay out to various parties
+    mapping(address => uint256) internal toPayOut; 
     
     //events 
     event PaymentPlaced (
@@ -23,13 +25,6 @@ contract PaymentSwitch is ManagedSecurity
         address indexed receiver, 
         uint256 amount
     );
-    event PaymentApproved (
-        address indexed approver, 
-        uint256 indexed orderId, 
-        uint256 amount,
-        uint256 fee
-    );
-    
     event PaymentSent ( 
         address indexed receiver, 
         uint256 amount, 
@@ -44,21 +39,11 @@ contract PaymentSwitch is ManagedSecurity
         address changedBy
     );
     
+    
     //errors 
-    error DuplicateOrderId(uint256 orderId);
-    error InvalidOrderId(uint256 orderId);
     error PaymentAmountMismatch(uint256 amount1, uint256 amount2);
+    error InvalidOrderId(uint256 orderId);
     
-    //enums
-    uint8 private constant STATE_PLACED = 1;
-    uint8 private constant STATE_APPROVED = 2;
-    
-    struct PaymentRecord {
-        uint256 amount;
-        address payer; 
-        address receiver;
-        uint8 state;
-    }
     
     constructor(ISecurityManager securityManager, address vault, uint256 _feeBps) {
         _setSecurityManager(securityManager);
@@ -66,101 +51,94 @@ contract PaymentSwitch is ManagedSecurity
         setFeeBps(_feeBps);
     }
     
-    //TODO: add restrictions
-    function setFeeBps(uint256 _feeBps) public payable {
+    function setFeeBps(uint256 _feeBps) public payable /*onlyRole(MOLOCH_ROLE)*/ {
         feeBps = _feeBps;
         emit FeeBpsChanged(_feeBps, msg.sender); //TODO: test
     }
 
-    //TODO: add restrictions
-    function setVaultAddress(address _vaultAddress) public payable {
+    function setVaultAddress(address _vaultAddress) public payable /*onlyRole(MOLOCH_ROLE)*/ {
         vaultAddress = _vaultAddress;
         emit VaultAddressChanged(_vaultAddress, msg.sender); //TODO: test
     }
     
-    //TODO: add restrictions
-    function placePayment(uint256 orderId, PaymentRecord calldata payment) external payable {
+    function placePayment(address seller, PaymentRecord calldata payment) external payable /*onlyRole(SYSTEM_ROLE)*/ {
         //check that the amount is correct
         if (payment.amount != msg.value)
             revert PaymentAmountMismatch(payment.amount, msg.value);
         
-        //throw error on duplicate
-        if (payments[orderId].amount != 0) 
-            revert DuplicateOrderId(orderId);
-            
-        payments[orderId] = payment;
-        
-        //not approved by default 
-        payments[orderId].state = STATE_PLACED;
+        //add payment to book
+        _addPendingPayment(seller, payment.orderId, payment.payer, payment.amount);     
         
         //event 
-        emit PaymentPlaced(
+        emit PaymentPlaced( //TODO: add order id 
             payment.payer, 
-            payment.receiver, 
+            seller, 
             payment.amount
         );
     }
     
-    //TODO: add restrictions
-    function approvePayment(uint256 orderId) external {
-        PaymentRecord storage payment = payments[orderId]; 
+    function removePayment(address receiver, uint256 orderId) external payable /*onlyRole(SYSTEM_ROLE)*/ {
+        _removePendingPayment(receiver, orderId); 
+    }
+    
+    function refundPayment(address receiver, uint256 orderId) external /*onlyRole(REFUNDER_ROLE)*/ {
+        PaymentRecord storage payment = _getPendingPayment(receiver, orderId); 
         
-        //TODO: error if invalid order id
-        if (payment.amount <= 0 || payment.state == 0) {
+        //throw if order invalid 
+        if (payment.payer == address(0)) {
             revert InvalidOrderId(orderId);
         }
         
-        //set state to approved
-        payment.state = STATE_APPROVED;
-        
-        //calculate fee from payment
-        uint256 fee = 0;
-        
-        if (vaultAddress != address(0)) {
-            fee = CarefulMath.div(payment.amount, feeBps); 
-            if (fee > payment.amount)
-                fee = 0;
+        if (payment.amount > 0) {
+
+            //place refund amount into bucker for payer
+            toPayOut[payment.payer] += payment.amount;
+            
+            //process in payment book   
+            payment.refunded = true;
+            _removePendingPayment(receiver, orderId); 
         }
-        
-        approvedFunds[payment.receiver] += payment.amount - fee;
-        
-        if (fee > 0) 
-            approvedFunds[vaultAddress] += fee;  //TODO: test
-        
-        //emit event 
-        emit PaymentApproved(
-            msg.sender, 
-            orderId, 
-            payment.amount, 
-            fee
-        );   //TODO: test
     }
     
-    //TODO: add restrictions
-    function pushPayment(address payable receiver) external {
-        _sendPayment(receiver);
+    //TODO: replace with approveBatch
+    function approvePayments(address receiver) external /*onlyRole(APPROVER_ROLE)*/ {
+        _approvePendingBucket(receiver);
     }
     
-    function pullPayment() external {
+    //TODO: replace with processBatch
+    function processPayments(address receiver) external /*onlyRole(MOLOCH_ROLE)*/ {
+        uint256 amount = toPayOut[receiver]; 
+        
+        //break off fee 
+        uint256 fee = CarefulMath.div(amount, feeBps);
+        if (fee > amount)
+            fee = 0;
+        uint256 toReceiver = amount - fee; 
+        
+        //set the amounts to pay out 
+        toPayOut[receiver] += toReceiver; 
+        toPayOut[vaultAddress] += fee; 
+        
+        //process the payment book 
+        _processApprovedBucket(receiver);
+    }
+    
+    function pushPayment(address receiver) external /*onlyRole(MOLOCK_ROLE) */ {
+        _sendPayment(payable(receiver)); 
+    }
+    
+    function pullPayment() external  {
         _sendPayment(payable(msg.sender));
-    }
-    
-    function getPayment(uint256 orderId) external view returns (PaymentRecord memory) {
-        return payments[orderId];
-    }
-    
-    function getApprovedFunds(address receiver) external view returns (uint256) {
-        return approvedFunds[receiver];
     }
     
     //TODO: protect against reentrancy
     function _sendPayment(address payable receiver) internal {
-        uint256 amount = approvedFunds[receiver]; 
+        uint256 amount = toPayOut[receiver]; 
          
         if (amount > 0) {
             
             //zero out the approved funds pot
-            approvedFunds[receiver] = 0;
+            toPayOut[receiver] = 0;
             
             //transfer 
             receiver.transfer(amount);

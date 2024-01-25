@@ -29,8 +29,8 @@ export async function deploySecurityManager(adminAddress: string): Promise<Secur
 }
 
 export async function deployPaymentSwitch(
-    securityManager: Addressable | string, 
-    vaultAddress: Addressable | string = "", 
+    securityManager: Addressable | string,
+    vaultAddress: Addressable | string = "",
     feeBps: Number = 0
 ): Promise<PaymentSwitch> {
     const accounts = await ethers.getSigners();
@@ -38,12 +38,33 @@ export async function deployPaymentSwitch(
         "PaymentSwitch",
         accounts[0]
     ));
-    
+
     if (!vaultAddress || vaultAddress.toString().length == 0) {
         vaultAddress = ethers.ZeroAddress;
     }
-    
-    if (feeBps <= 0) 
+
+    if (feeBps <= 0)
+        feeBps = defaultFeeBps;
+
+    return (await factory.deploy(securityManager, vaultAddress, feeBps)) as any;
+}
+
+export async function deployPaymentSwitch2(
+    securityManager: Addressable | string,
+    vaultAddress: Addressable | string = "",
+    feeBps: Number = 0
+): Promise<PaymentSwitch2> {
+    const accounts = await ethers.getSigners();
+    const factory: any = (await ethers.getContractFactory(
+        "PaymentSwitch2",
+        accounts[0]
+    ));
+
+    if (!vaultAddress || vaultAddress.toString().length == 0) {
+        vaultAddress = ethers.ZeroAddress;
+    }
+
+    if (feeBps <= 0)
         feeBps = defaultFeeBps;
 
     return (await factory.deploy(securityManager, vaultAddress, feeBps)) as any;

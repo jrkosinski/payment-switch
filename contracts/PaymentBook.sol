@@ -5,7 +5,7 @@ contract PaymentBook
     mapping(address => PaymentBucket) internal pendingBuckets; 
     mapping(address => PaymentBucket[]) internal approvedBuckets; 
     mapping(address => mapping(uint256 => uint256)) internal orderIdsToIndexes;  //TODO: this needs epochs or it will cause problems
-    mapping(address => uint256) internal toPayOut;
+    mapping(address => uint256) internal approvedFunds;
     
     //enum 
     uint8 constant STATE_PENDING = 1;
@@ -32,7 +32,21 @@ contract PaymentBook
         PaymentRecord[] payments;
     }
     
-    function addPendingPayment(address receiver, uint256 orderId, address payer, uint256 amount) internal {
+    
+    function getPendingPayments(address receiver) public view returns (PaymentBucket memory) {
+        return pendingBuckets[receiver];
+    }
+    
+    function getApprovedPayments(address receiver) public view returns (PaymentBucket[] memory) {
+        return approvedBuckets[receiver];
+    }
+    
+    function getAmountOwed(address receiver) public view returns (uint256) {
+        return approvedFunds[receiver]; 
+    }
+    
+    
+    function _addPendingPayment(address receiver, uint256 orderId, address payer, uint256 amount) internal {
         PaymentBucket storage pending = pendingBuckets[receiver];
         pendingBuckets[receiver].paymentList.status = STATE_PENDING;
         
@@ -44,7 +58,7 @@ contract PaymentBook
         //TODO: check first for duplicate
     }
     
-    function removePendingPayment(address receiver, uint256 orderId) internal {
+    function _removePendingPayment(address receiver, uint256 orderId) internal {
         uint256 index = orderIdsToIndexes[receiver][orderId]; 
         if (index > 0) {
             PaymentRecord storage payment = pendingBuckets[receiver].paymentList.payments[index-1];  
@@ -54,7 +68,7 @@ contract PaymentBook
         }
     }
     
-    function approvePendingBucket(address receiver) internal {
+    function _approvePendingBucket(address receiver) internal {
         //make a copy of the pending bucket
         PaymentBucket storage pending = pendingBuckets[receiver];
         
@@ -65,7 +79,7 @@ contract PaymentBook
         approvedBuckets[receiver].push(pending);
         
         //record the amount 
-        toPayOut[receiver] += pending.total;
+        approvedFunds[receiver] += pending.total;
         
         //delete the payments from the actual pending bucket (they've been moved)
         pending.total = 0; 
@@ -73,7 +87,7 @@ contract PaymentBook
         delete pending.paymentList.payments;
     }
     
-    function processApprovedBucket(address receiver) internal {
+    function _processApprovedBucket(address receiver) internal {
         PaymentBucket[] storage approved = approvedBuckets[receiver];
         
         //if there are approved buckets
@@ -85,26 +99,11 @@ contract PaymentBook
                 bucket.paymentList.status = STATE_PROCESSED;
             }
             
-            toPayOut[receiver] = 0;
+            approvedFunds[receiver] = 0;
         }
     }
     
-    
-    
-    
-    function getPendingPayments(address receiver) public view returns (PaymentBucket memory) {
-        return pendingBuckets[receiver];
-    }
-    
-    function getApprovedPayments(address receiver) public view returns (PaymentBucket[] memory) {
-        return approvedBuckets[receiver];
-    }
-    
-    function getAmountOwed(address receiver) public view returns (uint256) {
-        return toPayOut[receiver]; 
-    }
-    
-    function getPendingPayment(address receiver, uint256 orderId) internal view returns (PaymentRecord storage) {
+    function _getPendingPayment(address receiver, uint256 orderId) internal view returns (PaymentRecord storage) {
         return pendingBuckets[receiver].paymentList.payments[orderIdsToIndexes[receiver][orderId]]; 
     }
 }
