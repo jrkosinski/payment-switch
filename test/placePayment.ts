@@ -37,22 +37,22 @@ describe("PaymentSwitch: Place Payments", function () {
             //initial values
             expect(await getBalanceAsNumber(switcher.target)).to.equal(0);
             
-            paymentRecord = await switcher.getPayment(orderId.toString());
+            paymentRecord = await switcher.getPendingPayment(addresses.seller, orderId.toString());
             expect(parseInt(paymentRecord.amount)).to.equal(0);
              
             //TODO: can be its own type 
             const paymentData: any = {
-                amount, payer, receiver: seller, state: 0
+                amount, payer, orderId: orderId, refunded: false
             };
             
-            await switcher.placePayment(orderId.toString(), paymentData, { value: amount }); 
+            await switcher.placePayment(addresses.seller, paymentData, { value: amount }); 
             
             //check that amount is recorded 
-            paymentRecord = await switcher.getPayment(orderId.toString());
+            paymentRecord = await switcher.getPendingPayment(addresses.seller, orderId.toString());
             expect(paymentRecord.payer).to.equal(payer);
-            expect(paymentRecord.receiver).to.equal(seller);
             expect(parseInt(paymentRecord.amount)).to.equal(amount);
-            expect(parseInt(paymentRecord.state)).to.equal(constants.paymentStates.placed);
+            expect(parseInt(paymentRecord.orderId)).to.equal(orderId);
+            expect(paymentRecord.refunded).to.equal(false);
             
             //check that ether amount is stored 
             expect(await getBalanceAsNumber(switcher.target)).to.equal(amount);

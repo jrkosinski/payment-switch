@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.7;
+
 import "./ManagedSecurity.sol"; 
 import "./PaymentBook.sol"; 
 import "./utils/CarefulMath.sol"; 
@@ -107,12 +109,15 @@ contract PaymentSwitch is ManagedSecurity, PaymentBook //TODO: compose instead o
     
     //TODO: replace with processBatch
     function processPayments(address receiver) external /*onlyRole(MOLOCH_ROLE)*/ {
-        uint256 amount = toPayOut[receiver]; 
+        uint256 amount = approvedFunds[receiver]; 
         
         //break off fee 
-        uint256 fee = CarefulMath.div(amount, feeBps);
-        if (fee > amount)
-            fee = 0;
+        uint256 fee = 0;
+        if (feeBps > 0) {
+            fee = CarefulMath.div(amount, feeBps);
+            if (fee > amount)
+                fee = 0;
+        }
         uint256 toReceiver = amount - fee; 
         
         //set the amounts to pay out 
@@ -128,7 +133,14 @@ contract PaymentSwitch is ManagedSecurity, PaymentBook //TODO: compose instead o
     }
     
     function pullPayment() external  {
-        _sendPayment(payable(msg.sender));
+        //TODO: implement 
+    }
+    
+    function getPendingPayment(address receiver, uint256 orderId) public view returns (PaymentRecord memory) {
+        PaymentRecord memory payment;
+        if (_paymentExists(receiver, orderId)) 
+            payment = _getPendingPayment(receiver, orderId);
+        return payment;
     }
     
     //TODO: protect against reentrancy

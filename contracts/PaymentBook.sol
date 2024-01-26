@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.7;
 
 contract PaymentBook
 {
@@ -104,6 +105,16 @@ contract PaymentBook
     }
     
     function _getPendingPayment(address receiver, uint256 orderId) internal view returns (PaymentRecord storage) {
-        return pendingBuckets[receiver].paymentList.payments[orderIdsToIndexes[receiver][orderId]]; 
+        uint256 index = orderIdsToIndexes[receiver][orderId]; 
+        if (index >0) {
+            index -= 1;
+        }
+        
+        return pendingBuckets[receiver].paymentList.payments[index]; 
+    }
+    
+    function _paymentExists(address receiver, uint256 orderId) internal view returns (bool) {
+        uint256 index = orderIdsToIndexes[receiver][orderId]; 
+        return (index > 0);
     }
 }
