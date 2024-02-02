@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.7;
 
+/**
+ * @title PaymentBook 
+ * 
+ * Encapsulates logic for storing and batching payment information 
+ * 
+ * @author John R. Kosinski
+ * LoadPipe 2024
+ * All rights reserved. Unauthorized use prohibited.
+ */
 contract PaymentBook
 {
     mapping(address => PaymentBucket) internal pendingBuckets; 

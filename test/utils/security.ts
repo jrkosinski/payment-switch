@@ -31,7 +31,7 @@ export async function applySecurityRoles(securityManager: SecurityManager, addre
     if (addresses.multisig) {
         
     }   
-    if (addresses.moloch) {
+    if (addresses.dao) {
         
     }
     if (addresses.approver) {

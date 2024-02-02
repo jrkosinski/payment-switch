@@ -16,7 +16,7 @@ describe("PaymentSwitch: Approve Payments", function () {
     let addresses: any = {};
 
     this.beforeEach(async function () {
-        let acc = await getTestAccounts(['admin', 'approver', 'moloch', 'multisig', 'payer', 'seller']);
+        let acc = await getTestAccounts(['admin', 'approver', 'dao', 'multisig', 'payer', 'seller']);
         addresses = acc.addresses;
         securityManager = await deploySecurityManager(addresses.admin);
         switcher = await deployPaymentSwitch(securityManager.target);

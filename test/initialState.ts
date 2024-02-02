@@ -16,7 +16,7 @@ describe("PaymentSwitch: Initial State", function () {
     let addresses: any = {};
 
     this.beforeEach(async function () {
-        let acc = await getTestAccounts(['admin', 'approver', 'moloch', 'multisig']);
+        let acc = await getTestAccounts(['admin', 'approver', 'dao', 'multisig']);
         addresses = acc.addresses;
         securityManager = await deploySecurityManager(addresses.admin);
         switcher = await deployPaymentSwitch(securityManager.target);

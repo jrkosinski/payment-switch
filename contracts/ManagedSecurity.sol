@@ -25,7 +25,8 @@ abstract contract ManagedSecurity is Context {
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
     bytes32 public constant SYSTEM_ROLE = keccak256("SYSTEM_ROLE");
     bytes32 public constant APPROVER_ROLE = keccak256("APPROVER_ROLE");
-    bytes32 public constant VAULT_ROLE = keccak256("VAULT_ROLE");
+    bytes32 public constant REFUNDER_ROLE = keccak256("REFUNDER_ROLE");
+    bytes32 public constant DAO_ROLE = keccak256("DAO_ROLE");
     
     //thrown when the onlyRole modifier reverts 
     error UnauthorizedAccess(bytes32 roleId, address addr); 
