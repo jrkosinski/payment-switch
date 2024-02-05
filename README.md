@@ -1,4 +1,4 @@
-# Loadpipe Switcherino
+# Loadpipe Payment Switch
 
 ## Setup & Operation
 
