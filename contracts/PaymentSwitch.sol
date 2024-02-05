@@ -66,8 +66,8 @@ contract PaymentSwitch is ManagedSecurity, PaymentBook //TODO: compose instead o
      */
     constructor(ISecurityManager securityManager, address vault, uint256 _feeBps) {
         _setSecurityManager(securityManager);
-        setVaultAddress(vault);
-        setFeeBps(_feeBps);
+        vaultAddress = vault;
+        feeBps = _feeBps;
     }
     
     /**

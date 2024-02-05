@@ -15,10 +15,12 @@ describe("PaymentSwitch: Push Payments", function () {
     let securityManager: SecurityManager;
 
     let addresses: any = {};
+    let accounts: any = {};
 
     this.beforeEach(async function () {
         let acc = await getTestAccounts(['admin', 'approver', 'dao', 'multisig', 'payer', 'seller']);
         addresses = acc.addresses;
+        accounts = acc.accounts;
         securityManager = await deploySecurityManager(addresses.admin);
         switcher = await deployPaymentSwitch(securityManager.target, addresses.admin, 100);
 
@@ -61,10 +63,10 @@ describe("PaymentSwitch: Push Payments", function () {
             //expect(parseInt(paymentRecord.state)).to.equal(constants.paymentStates.approved);
             
             //TODO: test processing payments separately 
-            await switcher.processPayments(seller); 
+            await switcher.connect(accounts.dao).processPayments(seller);
             
             //push the payment 
-            await switcher.pushPayment(seller); 
+            await switcher.connect(accounts.dao).pushPayment(seller); 
             
             //ensure that the funds have moved
             sellerBalance = (sellerBalance + amount) - (amount * 0.01); //TODO: get fee bps dynamically

@@ -19,10 +19,10 @@ describe("PaymentSwitch: Initial State", function () {
         let acc = await getTestAccounts(['admin', 'approver', 'dao', 'multisig']);
         addresses = acc.addresses;
         securityManager = await deploySecurityManager(addresses.admin);
-        switcher = await deployPaymentSwitch(securityManager.target);
 
         //apply security roles
         await applySecurityRoles(securityManager, addresses);
+        switcher = await deployPaymentSwitch(securityManager.target);
     });
 
     describe("Initial State", function () {

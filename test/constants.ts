@@ -2,11 +2,12 @@ import { ethers } from "ethers";
 
 export const roles = {
     admin: "0x0000000000000000000000000000000000000000000000000000000000000000",
-    upgrader: ethers.keccak256(ethers.toUtf8Bytes("UPGRADER_ROLE")), 
     pauser: ethers.keccak256(ethers.toUtf8Bytes("PAUSER_ROLE")),
+    upgrader: ethers.keccak256(ethers.toUtf8Bytes("UPGRADER_ROLE")), 
     system: ethers.keccak256(ethers.toUtf8Bytes("SYSTEM_ROLE")),
     approver: ethers.keccak256(ethers.toUtf8Bytes("APPROVER_ROLE")),
-    vault: ethers.keccak256(ethers.toUtf8Bytes("VAULT_ROLE")),
+    dao: ethers.keccak256(ethers.toUtf8Bytes("DAO_ROLE")),
+    refunder: ethers.keccak256(ethers.toUtf8Bytes("REFUNDER_ROLE"))
 };
 
 export const addresses = {

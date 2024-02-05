@@ -55,7 +55,7 @@ describe.skip("Batches: Batches", function () {
         return output;
     }
 
-    describe("Approve Payments", function () {
+    describe("Approve Batched Payments", function () {
     
         it("approve a simple successful payment", async function () {
             await switcher.placePayment(addresses.seller, {

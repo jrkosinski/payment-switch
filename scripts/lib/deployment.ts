@@ -49,27 +49,6 @@ export async function deployPaymentSwitch(
     return (await factory.deploy(securityManager, vaultAddress, feeBps)) as any;
 }
 
-export async function deployPaymentSwitch2(
-    securityManager: Addressable | string,
-    vaultAddress: Addressable | string = "",
-    feeBps: Number = 0
-): Promise<PaymentSwitch2> {
-    const accounts = await ethers.getSigners();
-    const factory: any = (await ethers.getContractFactory(
-        "PaymentSwitch2",
-        accounts[0]
-    ));
-
-    if (!vaultAddress || vaultAddress.toString().length == 0) {
-        vaultAddress = ethers.ZeroAddress;
-    }
-
-    if (feeBps <= 0)
-        feeBps = defaultFeeBps;
-
-    return (await factory.deploy(securityManager, vaultAddress, feeBps)) as any;
-}
-
 export async function upgradeProxy(
     address: string | Addressable, 
     newContractName: string) 

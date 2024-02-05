@@ -46,7 +46,7 @@ describe("PaymentSwitch: Place Payments", function () {
             };
             
             await switcher.placePayment(addresses.seller, paymentData, { value: amount }); 
-            
+
             //check that amount is recorded 
             paymentRecord = await switcher.getPendingPayment(addresses.seller, orderId.toString());
             expect(paymentRecord.payer).to.equal(payer);
