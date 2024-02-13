@@ -60,6 +60,13 @@ module.exports = {
             chainId: 11155111,
             url: `https://sepolia.infura.io/v3/${process.env.SEPOLIA_API_KEY}`,
         },
+        op_sepolia: {
+            url: "https://sepolia.optimism.io",
+            chainId: 11155420,
+            gasPrice: 8000000000,
+            gasMultiplier: 2,
+            accounts: [`${process.env.PRIVATE_KEY}`],
+        },
         optimism_sepolia: {
             accounts: [`${process.env.PRIVATE_KEY}`],
             chainId: 11155420,

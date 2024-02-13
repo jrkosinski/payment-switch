@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.7;
 
+import "hardhat/console.sol";
+
 /**
  * @title PaymentBook 
  * 
@@ -115,15 +117,26 @@ contract PaymentBook
     
     function _getPendingPayment(address receiver, uint256 orderId) internal view returns (PaymentRecord storage) {
         uint256 index = orderIdsToIndexes[receiver][orderId]; 
-        if (index >0) {
+        if (index > 0) {
             index -= 1;
         }
         
-        return pendingBuckets[receiver].paymentList.payments[index]; 
+        //TODO: if index == 0, it means there's no record; so do something good here
+        
+        return pendingBuckets[receiver].paymentList.payments[index];
     }
     
     function _paymentExists(address receiver, uint256 orderId) internal view returns (bool) {
         uint256 index = orderIdsToIndexes[receiver][orderId]; 
         return (index > 0);
+    }
+    
+    function _pendingPaymentExists(address receiver, uint256 orderId) internal view returns (bool) {
+        uint256 index = orderIdsToIndexes[receiver][orderId]; 
+        return (
+            index > 0 && 
+            pendingBuckets[receiver].paymentList.payments.length >= index && 
+            pendingBuckets[receiver].paymentList.payments[index-1].orderId == orderId
+        );
     }
 }

@@ -3,26 +3,30 @@ import {
     getTestAccounts,
     deploySecurityManager,
     deployPaymentSwitch,
-    getBalanceAsNumber
-} from "./utils";
-import { PaymentSwitch, SecurityManager } from "typechain";
-import { applySecurityRoles } from "./utils/security";
-import * as constants from "./constants";
+    getBalanceAsNumber,
+    deployMasterSwitch
+} from "../utils";
+import { PaymentSwitch, MasterSwitch, SecurityManager } from "typechain";
+import { applySecurityRoles } from "../utils/security";
+import * as constants from "../constants";
+import { IPaymentRecord } from "test/IPaymentRecord";
 
 
 describe("PaymentSwitch: Push Payments", function () {
-    let switcher: PaymentSwitch;
+    let paymentSwitch: PaymentSwitch;
+    let masterSwitch: MasterSwitch;
     let securityManager: SecurityManager;
 
     let addresses: any = {};
     let accounts: any = {};
 
     this.beforeEach(async function () {
-        let acc = await getTestAccounts(['admin', 'approver', 'dao', 'multisig', 'payer', 'seller']);
+        let acc = await getTestAccounts(['admin', 'approver', 'dao', 'system', 'payer', 'seller']);
         addresses = acc.addresses;
         accounts = acc.accounts;
         securityManager = await deploySecurityManager(addresses.admin);
-        switcher = await deployPaymentSwitch(securityManager.target, addresses.admin, 100);
+        masterSwitch = await deployMasterSwitch(securityManager.target);
+        paymentSwitch = await deployPaymentSwitch(masterSwitch.target);
 
         //apply security roles
         await applySecurityRoles(securityManager, addresses);
@@ -35,45 +39,45 @@ describe("PaymentSwitch: Push Payments", function () {
             const { payer, seller } = addresses;
             let paymentRecord: any = null;
 
-            paymentRecord = await switcher.getPendingPayment(seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(seller, orderId.toString());
             expect(parseInt(paymentRecord.amount)).to.equal(0);
+            expect(parseInt(paymentRecord.orderId)).to.equal(0);
 
-            //TODO: can be its own type 
-            const paymentData: any = {
-                amount, payer, receiver: seller, refunded: false, orderId: orderId
+            const paymentData: IPaymentRecord = {
+                amount, payer, orderId: orderId, refunded: false
             };
 
             //make the payment 
-            await switcher.placePayment(seller, paymentData, { value: amount });
+            await paymentSwitch.placePayment(seller, paymentData, { value: amount });
 
             //initial values 
-            paymentRecord = await switcher.getPendingPayment(seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(seller, orderId.toString());
             expect(parseInt(paymentRecord.amount)).to.equal(amount);
             expect(parseInt(paymentRecord.orderId)).to.equal(orderId);
             
             //check seller initial balance
             let sellerBalance = await getBalanceAsNumber(seller);
-            expect(await getBalanceAsNumber(switcher.target)).to.equal(amount);
+            expect(await getBalanceAsNumber(paymentSwitch.target)).to.equal(amount);
 
             //approve the payment 
-            await switcher.approvePayments(seller);
+            await paymentSwitch.approvePayments(seller);
 
             //TODO: shouldn't fail 
-            //paymentRecord = await switcher.getPendingPayment(seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(seller, orderId.toString());
             //expect(parseInt(paymentRecord.state)).to.equal(constants.paymentStates.approved);
             
             //TODO: test processing payments separately 
-            await switcher.connect(accounts.dao).processPayments(seller);
-            
+            await paymentSwitch.connect(accounts.dao).processPayments(seller);
+
             //push the payment 
-            await switcher.connect(accounts.dao).pushPayment(seller); 
+            await paymentSwitch.connect(accounts.dao).pushPayment(seller); 
             
             //ensure that the funds have moved
             sellerBalance = (sellerBalance + amount) - (amount * 0.01); //TODO: get fee bps dynamically
             expect(await getBalanceAsNumber(seller)).to.equal(sellerBalance);
-            
+
             //fee has not been pushed out to vault yet 
-            expect(await getBalanceAsNumber(switcher.target)).to.equal(amount * 0.01);
+            expect(await getBalanceAsNumber(paymentSwitch.target)).to.equal(amount * 0.01);
         });
     });
 });

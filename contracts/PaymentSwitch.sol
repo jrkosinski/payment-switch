@@ -3,9 +3,10 @@ pragma solidity ^0.8.7;
 
 import "./ManagedSecurity.sol"; 
 import "./PaymentBook.sol"; 
+import "./IMasterSwitch.sol";
 import "./utils/CarefulMath.sol"; 
+import "hardhat/console.sol";
 
-//TODO: add security restrictions 
 //TODO: multi-payment orders 
 //TODO: order batches for approval 
 
@@ -21,14 +22,12 @@ import "./utils/CarefulMath.sol";
  */
 contract PaymentSwitch is ManagedSecurity, PaymentBook //TODO: compose instead of inherit
 {
-    //how much fee is charged per payment (in bps)
-    uint256 public feeBps; 
-    
-    //address to which the fee charged (profit) is sent
-    address public vaultAddress;
-    
     //final approval - amount to pay out to various parties
     mapping(address => uint256) internal toPayOut; 
+    
+    IMasterSwitch public masterSwitch; //TODO: change to interface 
+    
+    address public tokenAddress;
     
     //EVENTS 
     event PaymentPlaced (
@@ -41,14 +40,6 @@ contract PaymentSwitch is ManagedSecurity, PaymentBook //TODO: compose instead o
         uint256 amount, 
         bool success
     );
-    event VaultAddressChanged (
-        address newAddress,
-        address changedBy
-    );
-    event FeeBpsChanged (
-        uint256 newValue,
-        address changedBy
-    );
     
     
     //ERRORS 
@@ -60,38 +51,13 @@ contract PaymentSwitch is ManagedSecurity, PaymentBook //TODO: compose instead o
     /**
      * Constructor. 
      * 
-     * @param securityManager Contract which will manage secure access for this contract. 
-     * @param vault Recipient of the extracted fees. 
-     * @param _feeBps BPS defining the fee portion of each payment. 
+     * @param _tokenAddress Address of the token that defines the payment currency. 
+     * @param _masterSwitch Address of the master switch contract.
      */
-    constructor(ISecurityManager securityManager, address vault, uint256 _feeBps) {
-        _setSecurityManager(securityManager);
-        vaultAddress = vault;
-        feeBps = _feeBps;
-    }
-    
-    /**
-     * The DAO is allowed to change the fee portion. 
-     * 
-     * @param _feeBps BPS defining the fee portion of each payment. 
-     */
-    function setFeeBps(uint256 _feeBps) public onlyRole(DAO_ROLE) {
-        if (feeBps != _feeBps) {
-            feeBps = _feeBps;
-            emit FeeBpsChanged(_feeBps, msg.sender); //TODO: test
-        }
-    }
-
-    /**
-     * The DAO is allowed to change the address to which fees are sent. 
-     * 
-     * @param _vaultAddress The new address. 
-     */
-    function setVaultAddress(address _vaultAddress) public onlyRole(DAO_ROLE) {
-        if (_vaultAddress != vaultAddress) {
-            vaultAddress = _vaultAddress;
-            emit VaultAddressChanged(_vaultAddress, msg.sender); //TODO: test
-        }
+    constructor(IMasterSwitch _masterSwitch, address _tokenAddress) {
+        _setSecurityManager(ISecurityManager(_masterSwitch.securityManager())); 
+        masterSwitch = _masterSwitch;
+        tokenAddress = _tokenAddress;
     }
     
     /**
@@ -162,6 +128,7 @@ contract PaymentSwitch is ManagedSecurity, PaymentBook //TODO: compose instead o
         
         //break off fee 
         uint256 fee = 0;
+        uint256 feeBps = masterSwitch.feeBps();
         if (feeBps > 0) {
             fee = CarefulMath.div(amount, feeBps);
             if (fee > amount)
@@ -171,7 +138,7 @@ contract PaymentSwitch is ManagedSecurity, PaymentBook //TODO: compose instead o
         
         //set the amounts to pay out 
         toPayOut[receiver] += toReceiver; 
-        toPayOut[vaultAddress] += fee; 
+        toPayOut[masterSwitch.vaultAddress()] += fee; 
         
         //process the payment book 
         _processApprovedBucket(receiver);
@@ -201,8 +168,9 @@ contract PaymentSwitch is ManagedSecurity, PaymentBook //TODO: compose instead o
      */
     function getPendingPayment(address receiver, uint256 orderId) public view returns (PaymentRecord memory) {
         PaymentRecord memory payment;
-        if (_paymentExists(receiver, orderId)) 
+        if (_pendingPaymentExists(receiver, orderId)) {
             payment = _getPendingPayment(receiver, orderId);
+        }
         return payment;
     }
     

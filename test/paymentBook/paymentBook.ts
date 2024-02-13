@@ -3,10 +3,10 @@ import { ethers } from "hardhat";
 import {
     getTestAccounts,
     getBalanceAsNumber
-} from "./utils";
+} from "../utils";
 import { TestPaymentBook } from "typechain";
-import { applySecurityRoles } from "./utils/security";
-import * as constants from "./constants";
+import { applySecurityRoles } from "../utils/security";
+import * as constants from "../constants";
 
 
 describe("PaymentBook: General", function () {

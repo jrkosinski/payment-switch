@@ -1,6 +1,6 @@
 import { BigNumberish } from "ethers";
 
-interface IPaymentRecord {
+export interface IPaymentRecord {
     orderId: BigNumberish, 
     payer: string, 
     amount: BigNumberish, 

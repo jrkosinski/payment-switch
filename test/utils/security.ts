@@ -32,8 +32,8 @@ export async function applySecurityRoles(securityManager: SecurityManager, addre
         await securityManager.grantRole(constants.roles.approver, addresses.admin);
         await securityManager.grantRole(constants.roles.system, addresses.admin);
     }
-    if (addresses.multisig) {
-        await securityManager.grantRole(constants.roles.dao, addresses.multisig);
+    if (addresses.system) {
+        await securityManager.grantRole(constants.roles.system, addresses.system);
     }   
     if (addresses.dao) {
         await securityManager.grantRole(constants.roles.dao, addresses.dao);

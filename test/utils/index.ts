@@ -146,6 +146,7 @@ export async function getBalanceAsNumber(address: string | Addressable): Promise
 export { revokeRole, grantRole, getSecurityManager } from "./security";
 export {
     deployPaymentSwitch,
+    deployMasterSwitch,
     deploySecurityManager, 
     deployContractSizer, 
 } from "../../scripts/lib/deployment"; 
