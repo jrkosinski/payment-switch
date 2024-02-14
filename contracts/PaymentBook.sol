@@ -60,19 +60,27 @@ contract PaymentBook
         return approvedFunds[receiver]; 
     }
     
+    function getAmountPending(address receiver) public view returns (uint256) {
+        return pendingBuckets[receiver].total; 
+    }
+    
     
     function _addPendingPayment(address receiver, uint256 orderId, address payer, uint256 amount) internal {
         PaymentBucket storage pending = pendingBuckets[receiver];
         pendingBuckets[receiver].paymentList.status = STATE_PENDING;
         
         //check for duplicate
-        if (orderIdsToIndexes[receiver][orderId] > 0) //TODO: test this
-            revert DuplicateEntry();
+        if (orderIdsToIndexes[receiver][orderId] > 0) {
+            //if duplicate, add to the amount 
+            PaymentRecord storage payment = _getPendingPayment(receiver, orderId); 
+            payment.amount += amount;
+        } else {
+            //add the new payment record to the pending bucket
+            pending.paymentList.payments.push(PaymentRecord(orderId, payer, amount, false));
+            orderIdsToIndexes[receiver][orderId] = pending.paymentList.payments.length;
+        }
         
-        //add the new payment record to the pending bucket
-        pending.paymentList.payments.push(PaymentRecord(orderId, payer, amount, false));
         pending.total += amount;
-        orderIdsToIndexes[receiver][orderId] = pending.paymentList.payments.length;
     }
     
     function _removePendingPayment(address receiver, uint256 orderId) internal {

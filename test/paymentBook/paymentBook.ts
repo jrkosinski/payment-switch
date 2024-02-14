@@ -15,7 +15,7 @@ describe("PaymentBook: General", function () {
     let addresses: any = {};
 
     this.beforeEach(async function () {
-        let acc = await getTestAccounts(['admin', 'receiver1', 'receiver2', 'payer1', 'payer2']);
+        let acc = await getTestAccounts(['admin', 'receiver1', 'receiver2', 'receiver3', 'payer1', 'payer2', 'payer3']);
         addresses = acc.addresses;
         
         //deploy test payment book 
@@ -40,18 +40,74 @@ describe("PaymentBook: General", function () {
     }
 
     describe("Add Payments", function () {
-        it("add multiple payments for the same receiver", async function () {
+        it("add a single payment", async function () {
             const oid = randomOrderId();
             const amount = 100;
             await paymentBook.addPendingPayment(
                 addresses.receiver1, oid, addresses.payer1, amount
+            );
+
+            expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
+            expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount);
+        });
+        
+        it("add multiple payments for the same receiver", async function () {
+            const oid1 = randomOrderId();
+            const amount1 = 100;
+            await paymentBook.addPendingPayment(
+                addresses.receiver1, oid1, addresses.payer1, amount1
+            );
+
+            const oid2 = randomOrderId();
+            const amount2 = 200;
+            await paymentBook.addPendingPayment(
+                addresses.receiver1, oid1, addresses.payer2, amount2
+            );
+
+            const oid3 = randomOrderId();
+            const amount3 = 300;
+            await paymentBook.addPendingPayment(
+                addresses.receiver1, oid1, addresses.payer3, amount3
             ); 
+            
+            expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
+            expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount1 + amount2 + amount3);
         });
 
         it("add multiple payments for different receivers", async function () {
+            //TODO: implement
         });
         
         it("add and remove a payment", async function () {
+            //TODO: implement
+        });
+        
+        it("add to an existing payment from the original buyer", async function () {
+            const oid = randomOrderId();
+            const amount1 = 100;
+            await paymentBook.addPendingPayment(
+                addresses.receiver1, oid, addresses.payer1, amount1
+            );
+
+            const amount2 = 200;
+            await paymentBook.addPendingPayment(
+                addresses.receiver1, oid, addresses.payer1, amount2
+            );
+            
+            expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount1 + amount2);
+        });
+
+        it("add to an existing payment from a different buyer", async function () {
+            const oid = randomOrderId();
+            const amount1 = 100;
+            await paymentBook.addPendingPayment(
+                addresses.receiver1, oid, addresses.payer1, amount1
+            );
+
+            const amount2 = 200;
+            await paymentBook.addPendingPayment(
+                addresses.receiver1, oid, addresses.payer2, amount2
+            );
         });
     });
 
@@ -60,9 +116,15 @@ describe("PaymentBook: General", function () {
         });
 
         it("approve remaining payments after refunding payments", async function () {
+            //TODO: implement
         });
 
         it("attempt to refund payments that have been approved", async function () {
+            //TODO: implement
+        });
+        
+        it("partial refund", async function () {
+            //TODO: implement
         });
     });
 

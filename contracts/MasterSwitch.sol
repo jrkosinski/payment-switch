@@ -55,7 +55,7 @@ contract MasterSwitch is ManagedSecurity
             feeBps = _feeBps;
             emit FeeBpsChanged(_feeBps, msg.sender); //TODO: TEST
         }
-    }
+    } //TODO: TEST
 
     /**
      * The DAO is allowed to change the address to which fees are sent. 
@@ -67,5 +67,5 @@ contract MasterSwitch is ManagedSecurity
             vaultAddress = _vaultAddress;
             emit VaultAddressChanged(_vaultAddress, msg.sender); //TODO: TEST
         }
-    }
+    } //TODO: TEST
 }
