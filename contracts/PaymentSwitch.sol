@@ -6,6 +6,7 @@ import "./PaymentBook.sol";
 import "./IMasterSwitch.sol";
 import "./utils/CarefulMath.sol"; 
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol"; 
 
 //TODO: multi-payment orders 
 //TODO: order batches for approval 
@@ -20,12 +21,13 @@ import "hardhat/console.sol";
  * LoadPipe 2024
  * All rights reserved. Unauthorized use prohibited.
  */
-contract PaymentSwitch is ManagedSecurity, PaymentBook //TODO: compose instead of inherit
+contract PaymentSwitch is ManagedSecurity, PaymentBook, ReentrancyGuard 
+    //TODO: compose PaymentBook instead of inherit
 {
     //final approval - amount to pay out to various parties
     mapping(address => uint256) internal toPayOut; 
     
-    IMasterSwitch public masterSwitch; //TODO: change to interface 
+    IMasterSwitch public masterSwitch;
     
     address public tokenAddress;
     
@@ -117,8 +119,13 @@ contract PaymentSwitch is ManagedSecurity, PaymentBook //TODO: compose instead o
         }
     }
     
-    //TODO: replace with approveBatch
-    function approvePayments(address receiver) external onlyRole(APPROVER_ROLE) {
+    function approveBatch(address[] calldata receivers) external onlyRole(APPROVER_ROLE) {
+        for(uint256 n=0; n<receivers.length; n++) {
+            approvePayments(receivers[n]);
+        }
+    }
+    
+    function approvePayments(address receiver) public onlyRole(APPROVER_ROLE) {
         _approvePendingBucket(receiver);
     }
     
@@ -174,14 +181,13 @@ contract PaymentSwitch is ManagedSecurity, PaymentBook //TODO: compose instead o
         return payment;
     }
     
-    //TODO: protect against reentrancy
     /**
      * Does the actual work of sending a payment (whether pull or push) to the intended
      * recipient. 
      * 
      * @param receiver The address of the recipient of payment. 
      */
-    function _sendPayment(address payable receiver) internal {
+    function _sendPayment(address payable receiver) internal nonReentrant {
         uint256 amount = toPayOut[receiver]; 
     
         //checks: 
