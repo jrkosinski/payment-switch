@@ -53,7 +53,7 @@ contract MasterSwitch is ManagedSecurity
     function setFeeBps(uint256 _feeBps) public onlyRole(DAO_ROLE) {
         if (feeBps != _feeBps) {
             feeBps = _feeBps;
-            emit FeeBpsChanged(_feeBps, msg.sender); //TODO: test
+            emit FeeBpsChanged(_feeBps, msg.sender); //TODO: TEST
         }
     }
 
@@ -65,7 +65,7 @@ contract MasterSwitch is ManagedSecurity
     function setVaultAddress(address _vaultAddress) public onlyRole(DAO_ROLE) {
         if (_vaultAddress != vaultAddress) {
             vaultAddress = _vaultAddress;
-            emit VaultAddressChanged(_vaultAddress, msg.sender); //TODO: test
+            emit VaultAddressChanged(_vaultAddress, msg.sender); //TODO: TEST
         }
     }
 }

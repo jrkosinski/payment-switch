@@ -24,6 +24,9 @@ contract PaymentBook
     uint8 constant STATE_APPROVED = 2;
     uint8 constant STATE_PROCESSED = 3;
     
+    //errors
+    error DuplicateEntry();
+    
     struct PaymentBucket 
     {
         uint256 total;
@@ -62,12 +65,14 @@ contract PaymentBook
         PaymentBucket storage pending = pendingBuckets[receiver];
         pendingBuckets[receiver].paymentList.status = STATE_PENDING;
         
+        //check for duplicate
+        if (orderIdsToIndexes[receiver][orderId] > 0) //TODO: test this
+            revert DuplicateEntry();
+        
         //add the new payment record to the pending bucket
         pending.paymentList.payments.push(PaymentRecord(orderId, payer, amount, false));
         pending.total += amount;
         orderIdsToIndexes[receiver][orderId] = pending.paymentList.payments.length;
-        
-        //TODO: check first for duplicate
     }
     
     function _removePendingPayment(address receiver, uint256 orderId) internal {
