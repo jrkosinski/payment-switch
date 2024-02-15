@@ -101,30 +101,22 @@ contract PaymentSwitch is ManagedSecurity, PaymentBook, ReentrancyGuard
      * @param orderId Identifier of the order for which the payment was placed.
      */
     function refundPayment(address receiver, uint256 orderId) external onlyRole(REFUNDER_ROLE) {
-        PaymentRecord storage payment = _getPendingPayment(receiver, orderId); 
-        
-        //throw if order invalid 
-        if (payment.payer == address(0)) {
-            revert InvalidOrderId(orderId);
-        }
-        
-        if (payment.amount > 0) {
-
-            //place refund amount into bucker for payer
-            toPayOut[payment.payer] += payment.amount;
-            
-            //process in payment book   
-            payment.refunded = true;
-            _removePendingPayment(receiver, orderId); 
-        }
+        _refundPayment(receiver, orderId, 0);
     }
     
+    //TODO: comment
+    function refundPaymentPartial(address receiver, uint256 orderId, uint256 amount) external onlyRole(REFUNDER_ROLE) {
+        _refundPayment(receiver, orderId, amount);
+    }
+    
+    //TODO: comment 
     function approveBatch(address[] calldata receivers) external onlyRole(APPROVER_ROLE) {
         for(uint256 n=0; n<receivers.length; n++) {
             approvePayments(receivers[n]);
         }
     }
     
+    //TODO: comment 
     function approvePayments(address receiver) public onlyRole(APPROVER_ROLE) {
         _approvePendingBucket(receiver);
     }
@@ -206,6 +198,40 @@ contract PaymentSwitch is ManagedSecurity, PaymentBook, ReentrancyGuard
             
             //emit event 
             emit PaymentSent(receiver, amount, success); //TODO: test
+        }
+    }
+    
+    function _refundPayment(address receiver, uint256 orderId, uint256 amount) internal nonReentrant {
+        PaymentRecord storage payment = _getPendingPayment(receiver, orderId); 
+        
+        //throw if order invalid 
+        if (payment.payer == address(0)) {
+            revert InvalidOrderId(orderId);
+        }
+        
+        if (payment.amount > 0) {
+            
+            //if no amount passed in, use the whole payment amount 
+            if (amount == 0) 
+                amount = payment.amount;
+        
+            //refund amount can't be greater than the original payment 
+            if (amount > payment.amount) {
+                amount = payment.amount;
+            }
+
+            //place refund amount into bucket for payer
+            toPayOut[payment.payer] += amount;
+            toPayOut[receiver] -= amount; //TODO: check for overflow
+            
+            //TODO: decrement payment amount 
+            payment.amount -= amount;
+            
+            //remove payment if amount is now 0
+            if (payment.amount == 0) {
+                payment.refunded = true;
+                _removePendingPayment(receiver, orderId); 
+            }
         }
     }
 }

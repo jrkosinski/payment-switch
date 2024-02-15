@@ -41,6 +41,9 @@ describe("PaymentBook: General", function () {
 
     describe("Add Payments", function () {
         it("add a single payment", async function () {
+            expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
+            expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(0);
+            
             const oid = randomOrderId();
             const amount = 100;
             await paymentBook.addPendingPayment(
@@ -52,6 +55,9 @@ describe("PaymentBook: General", function () {
         });
         
         it("add multiple payments for the same receiver", async function () {
+            expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
+            expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(0);
+            
             const oid1 = randomOrderId();
             const amount1 = 100;
             await paymentBook.addPendingPayment(
@@ -61,13 +67,13 @@ describe("PaymentBook: General", function () {
             const oid2 = randomOrderId();
             const amount2 = 200;
             await paymentBook.addPendingPayment(
-                addresses.receiver1, oid1, addresses.payer2, amount2
+                addresses.receiver1, oid2, addresses.payer2, amount2
             );
 
             const oid3 = randomOrderId();
             const amount3 = 300;
             await paymentBook.addPendingPayment(
-                addresses.receiver1, oid1, addresses.payer3, amount3
+                addresses.receiver1, oid3, addresses.payer3, amount3
             ); 
             
             expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
@@ -75,11 +81,76 @@ describe("PaymentBook: General", function () {
         });
 
         it("add multiple payments for different receivers", async function () {
-            //TODO: implement
+            expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
+            expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(0);
+
+            expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver2))).to.equal(0);
+            expect(parseInt(await paymentBook.getAmountPending(addresses.receiver2))).to.equal(0);
+            
+            const oid1 = randomOrderId();
+            const amount1 = 100;
+            await paymentBook.addPendingPayment(
+                addresses.receiver1, oid1, addresses.payer1, amount1
+            );
+
+            const oid2 = randomOrderId();
+            const amount2 = 200;
+            await paymentBook.addPendingPayment(
+                addresses.receiver1, oid2, addresses.payer2, amount2
+            );
+
+            const oid3 = randomOrderId();
+            const amount3 = 300;
+            await paymentBook.addPendingPayment(
+                addresses.receiver2, oid3, addresses.payer3, amount3
+            );
+
+            const oid4 = randomOrderId();
+            const amount4 = 400;
+            await paymentBook.addPendingPayment(
+                addresses.receiver2, oid4, addresses.payer2, amount4
+            );
+
+            expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
+            expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount1 + amount2);
+
+            expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver2))).to.equal(0);
+            expect(parseInt(await paymentBook.getAmountPending(addresses.receiver2))).to.equal(amount3 + amount4);
         });
         
         it("add and remove a payment", async function () {
-            //TODO: implement
+            expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
+            expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(0);
+
+            const oid1 = randomOrderId();
+            const amount1 = 100;
+            await paymentBook.addPendingPayment(
+                addresses.receiver1, oid1, addresses.payer1, amount1
+            );
+
+            const oid2 = randomOrderId();
+            const amount2 = 200;
+            await paymentBook.addPendingPayment(
+                addresses.receiver1, oid2, addresses.payer2, amount2
+            );
+
+            expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
+            expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount1 + amount2);
+            
+            //remove payment 1
+            await paymentBook.removePendingPayment(addresses.receiver1, oid1);
+
+            expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
+            expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount2);
+
+            //TODO: check that the payment is removed 
+            
+            //remove payment 2
+            await paymentBook.removePendingPayment(addresses.receiver1, oid2);
+
+            expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
+            expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(0);
+
         });
         
         it("add to an existing payment from the original buyer", async function () {
@@ -108,11 +179,15 @@ describe("PaymentBook: General", function () {
             await paymentBook.addPendingPayment(
                 addresses.receiver1, oid, addresses.payer2, amount2
             );
+            
+            //TODO: asserts
         });
     });
 
+    //TODO: move these all to paymentSwitch tests, because refunding is not the responsibility of PaymentBook
     describe("Refund Payments", function () {
-        it("refund a pending payment", async function () {
+        it("fully refund a pending payment", async function () {
+            
         });
 
         it("approve remaining payments after refunding payments", async function () {
@@ -130,17 +205,21 @@ describe("PaymentBook: General", function () {
 
     describe("Approve Payments", function () {
         it("approve payments for a single receiver", async function () {
+            //TODO: implement
         });
 
         it("approve payments for multiple receivers", async function () {
+            //TODO: implement
         });
     });
 
     describe("Process Payments", function () {
         it("process payments for a single receiver", async function () {
+            //TODO: implement
         });
 
         it("process payments for multiple receivers", async function () {
+            //TODO: implement
         });
     });
 });
