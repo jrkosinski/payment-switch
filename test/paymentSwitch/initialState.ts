@@ -3,15 +3,15 @@ import { ethers } from "hardhat";
 import {
     getTestAccounts,
     deploySecurityManager,
-    deployPaymentSwitch, 
+    deployPaymentSwitchNative, 
     deployMasterSwitch
 } from "../utils";
-import { PaymentSwitch, MasterSwitch, SecurityManager } from "typechain";
+import { PaymentSwitchNative, MasterSwitch, SecurityManager } from "typechain";
 import { applySecurityRoles } from "../utils/security";
 
 
 describe("PaymentSwitch: Initial State", function () {
-    let paymentSwitch: PaymentSwitch;
+    let paymentSwitch: PaymentSwitchNative;
     let masterSwitch: MasterSwitch;
     let securityManager: SecurityManager;
 
@@ -25,7 +25,7 @@ describe("PaymentSwitch: Initial State", function () {
         //apply security roles
         await applySecurityRoles(securityManager, addresses);
         masterSwitch = await deployMasterSwitch(securityManager.target);
-        paymentSwitch = await deployPaymentSwitch(masterSwitch.target);
+        paymentSwitch = await deployPaymentSwitchNative(masterSwitch.target);
     });
 
     describe("Initial State", function () {

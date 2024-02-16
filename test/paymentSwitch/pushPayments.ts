@@ -2,18 +2,18 @@ import { expect } from "chai";
 import {
     getTestAccounts,
     deploySecurityManager,
-    deployPaymentSwitch,
+    deployPaymentSwitchNative,
     getBalanceAsNumber,
     deployMasterSwitch
 } from "../utils";
-import { PaymentSwitch, MasterSwitch, SecurityManager } from "typechain";
+import { PaymentSwitchNative, MasterSwitch, SecurityManager } from "typechain";
 import { applySecurityRoles } from "../utils/security";
 import * as constants from "../constants";
 import { IPaymentRecord } from "test/IPaymentRecord";
 
 
 describe("PaymentSwitch: Push Payments", function () {
-    let paymentSwitch: PaymentSwitch;
+    let paymentSwitch: PaymentSwitchNative;
     let masterSwitch: MasterSwitch;
     let securityManager: SecurityManager;
 
@@ -26,7 +26,7 @@ describe("PaymentSwitch: Push Payments", function () {
         accounts = acc.accounts;
         securityManager = await deploySecurityManager(addresses.admin);
         masterSwitch = await deployMasterSwitch(securityManager.target);
-        paymentSwitch = await deployPaymentSwitch(masterSwitch.target);
+        paymentSwitch = await deployPaymentSwitchNative(masterSwitch.target);
 
         //apply security roles
         await applySecurityRoles(securityManager, addresses);

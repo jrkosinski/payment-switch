@@ -2,7 +2,7 @@ import { expect } from "chai";
 import {
     getTestAccounts,
     deploySecurityManager,
-    deployPaymentSwitch, 
+    deployPaymentSwitchNative, 
     deployMasterSwitch
 } from "../utils";
 import { MasterSwitch, SecurityManager } from "typechain";

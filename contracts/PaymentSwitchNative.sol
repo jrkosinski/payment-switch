@@ -6,7 +6,7 @@ import "hardhat/console.sol";
 
 //TODO: rename to PaymentSwitchNative
 /**
- * @title PaymentSwitch
+ * @title PaymentSwitchNative
  * 
  * Takes in funds from marketplace, extracts a fee, and batches the payments for transfer
  * to the appropriate parties, holding the funds in escrow in the meantime. 
@@ -15,15 +15,14 @@ import "hardhat/console.sol";
  * LoadPipe 2024
  * All rights reserved. Unauthorized use prohibited.
  */
-contract PaymentSwitch is PaymentSwitchBase
+contract PaymentSwitchNative is PaymentSwitchBase
 {
     /**
      * Constructor. 
      * 
      * @param masterSwitch Address of the master switch contract.
      */
-    //TODO: remove the tokenAddress parameter
-    constructor(IMasterSwitch masterSwitch, address tokenAddress) PaymentSwitchBase(masterSwitch) {
+    constructor(IMasterSwitch masterSwitch) PaymentSwitchBase(masterSwitch) {
     }
     
     /**

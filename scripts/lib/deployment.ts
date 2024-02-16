@@ -2,7 +2,8 @@ import { ethers, upgrades } from "hardhat";
 import {
     SecurityManager,
     ContractSizer,
-    PaymentSwitch, 
+    PaymentSwitchNative, 
+    PaymentSwitchToken,
     MasterSwitch
 } from "typechain";
 import { Addressable } from "ethers";
@@ -50,20 +51,36 @@ export async function deployMasterSwitch(
     return (await factory.deploy(securityManager, vaultAddress, feeBps)) as any;
 }
 
-export async function deployPaymentSwitch(
-    masterSwitch: Addressable | string,
-    tokenAddress: Addressable | string = ""
-): Promise<PaymentSwitch> {
+export async function deployPaymentSwitchNative(
+    masterSwitch: Addressable | string
+): Promise<PaymentSwitchNative> {
     const accounts = await ethers.getSigners();
     const factory: any = (await ethers.getContractFactory(
-        "PaymentSwitch",
+        "PaymentSwitchNative",
         accounts[0]
     ));
 
     if (!masterSwitch || masterSwitch.toString().length == 0) {
         masterSwitch = ethers.ZeroAddress;
     }
-    
+
+    return (await factory.deploy(masterSwitch)) as any;
+}
+
+export async function deployPaymentSwitchToken(
+    masterSwitch: Addressable | string,
+    tokenAddress: Addressable | string = ""
+): Promise<PaymentSwitchToken> {
+    const accounts = await ethers.getSigners();
+    const factory: any = (await ethers.getContractFactory(
+        "PaymentSwitchNative",
+        accounts[0]
+    ));
+
+    if (!masterSwitch || masterSwitch.toString().length == 0) {
+        masterSwitch = ethers.ZeroAddress;
+    }
+
     if (!tokenAddress || tokenAddress.toString().length == 0) {
         tokenAddress = ethers.ZeroAddress;
     }

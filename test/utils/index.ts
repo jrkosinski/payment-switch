@@ -162,7 +162,8 @@ export function convertPendingBucket(response: any): any {
 
 export { revokeRole, grantRole, getSecurityManager } from "./security";
 export {
-    deployPaymentSwitch,
+    deployPaymentSwitchNative,
+    deployPaymentSwitchToken,
     deployMasterSwitch,
     deploySecurityManager, 
     deployContractSizer, 

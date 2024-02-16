@@ -3,7 +3,7 @@ import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import {
     deploySecurityManager,
-    deployPaymentSwitch, 
+    deployPaymentSwitchNative, 
     deployMasterSwitch
 } from "./lib/deployment";
 import { run } from "./lib/runner";
