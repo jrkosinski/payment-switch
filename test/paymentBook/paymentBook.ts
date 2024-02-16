@@ -5,7 +5,7 @@ import {
     getBalanceAsNumber
 } from "../utils";
 import { TestPaymentBook } from "typechain";
-import { applySecurityRoles } from "../utils/security";
+import { convertPendingBucket } from "../utils";
 import * as constants from "../constants";
 
 
@@ -52,6 +52,14 @@ describe("PaymentBook: General", function () {
 
             expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
             expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount);
+            
+            const pendingBucket = convertPendingBucket(await paymentBook.getPendingPayments(addresses.receiver1));
+            expect(pendingBucket.total).to.equal(amount);
+            expect(pendingBucket.payments.length).to.equal(1);
+            expect(pendingBucket.payments[0].payer).to.equal(addresses.payer1);
+            expect(pendingBucket.payments[0].amount).to.equal(amount);
+            expect(pendingBucket.payments[0].orderId).to.equal(oid);
+            expect(pendingBucket.payments[0].refunded).to.be.false;
         });
         
         it("add multiple payments for the same receiver", async function () {
@@ -78,6 +86,19 @@ describe("PaymentBook: General", function () {
             
             expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
             expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount1 + amount2 + amount3);
+
+            const pendingBucket = convertPendingBucket(await paymentBook.getPendingPayments(addresses.receiver1));
+            expect(pendingBucket.total).to.equal(amount1 + amount2 + amount3);
+            expect(pendingBucket.payments.length).to.equal(3);
+            expect(pendingBucket.payments[0].orderId).to.equal(oid1);
+            expect(pendingBucket.payments[1].orderId).to.equal(oid2);
+            expect(pendingBucket.payments[2].orderId).to.equal(oid3);
+            expect(pendingBucket.payments[0].payer).to.equal(addresses.payer1);
+            expect(pendingBucket.payments[1].payer).to.equal(addresses.payer2);
+            expect(pendingBucket.payments[2].payer).to.equal(addresses.payer3);
+            expect(pendingBucket.payments[0].amount).to.equal(amount1);
+            expect(pendingBucket.payments[1].amount).to.equal(amount2);
+            expect(pendingBucket.payments[2].amount).to.equal(amount3);
         });
 
         it("add multiple payments for different receivers", async function () {
@@ -116,6 +137,28 @@ describe("PaymentBook: General", function () {
 
             expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver2))).to.equal(0);
             expect(parseInt(await paymentBook.getAmountPending(addresses.receiver2))).to.equal(amount3 + amount4);
+
+            //payments for first receiver 
+            const pendingBucket1 = convertPendingBucket(await paymentBook.getPendingPayments(addresses.receiver1));
+            expect(pendingBucket1.total).to.equal(amount1 + amount2);
+            expect(pendingBucket1.payments.length).to.equal(2);
+            expect(pendingBucket1.payments[0].orderId).to.equal(oid1);
+            expect(pendingBucket1.payments[1].orderId).to.equal(oid2);
+            expect(pendingBucket1.payments[0].payer).to.equal(addresses.payer1);
+            expect(pendingBucket1.payments[1].payer).to.equal(addresses.payer2);
+            expect(pendingBucket1.payments[0].amount).to.equal(amount1);
+            expect(pendingBucket1.payments[1].amount).to.equal(amount2);
+
+            //payments for second receiver 
+            const pendingBucket2 = convertPendingBucket(await paymentBook.getPendingPayments(addresses.receiver2));
+            expect(pendingBucket2.total).to.equal(amount3 + amount4);
+            expect(pendingBucket2.payments.length).to.equal(2);
+            expect(pendingBucket2.payments[0].orderId).to.equal(oid3);
+            expect(pendingBucket2.payments[1].orderId).to.equal(oid4);
+            expect(pendingBucket2.payments[0].payer).to.equal(addresses.payer3);
+            expect(pendingBucket2.payments[1].payer).to.equal(addresses.payer2);
+            expect(pendingBucket2.payments[0].amount).to.equal(amount3);
+            expect(pendingBucket2.payments[1].amount).to.equal(amount4);
         });
         
         it("add and remove a payment", async function () {
@@ -136,6 +179,10 @@ describe("PaymentBook: General", function () {
 
             expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
             expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount1 + amount2);
+
+            const pendingBucket1 = convertPendingBucket(await paymentBook.getPendingPayments(addresses.receiver1));
+            expect(pendingBucket1.payments.length).to.equal(2);
+            expect(pendingBucket1.total).to.equal(amount1 + amount2);
             
             //remove payment 1
             await paymentBook.removePendingPayment(addresses.receiver1, oid1);
@@ -143,7 +190,13 @@ describe("PaymentBook: General", function () {
             expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
             expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount2);
 
-            //TODO: check that the payment is removed 
+            //check that the payment is removed 
+            const pendingBucket2 = convertPendingBucket(await paymentBook.getPendingPayments(addresses.receiver1));
+            expect(pendingBucket2.total).to.equal(amount2);
+            expect(pendingBucket2.payments[0].orderId).to.equal(0);
+            expect(pendingBucket2.payments[0].amount).to.equal(0);
+            expect(pendingBucket2.payments[1].orderId).to.equal(oid2);
+            expect(pendingBucket2.payments[1].amount).to.equal(amount2);
             
             //remove payment 2
             await paymentBook.removePendingPayment(addresses.receiver1, oid2);
@@ -151,6 +204,14 @@ describe("PaymentBook: General", function () {
             expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
             expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(0);
 
+            const pendingBucket3 = convertPendingBucket(await paymentBook.getPendingPayments(addresses.receiver1));
+            expect(pendingBucket3.total).to.equal(0);
+            expect(pendingBucket3.payments[0].orderId).to.equal(0);
+            expect(pendingBucket3.payments[0].amount).to.equal(0);
+            expect(pendingBucket3.payments[0].refunded).to.be.false;
+            expect(pendingBucket3.payments[1].orderId).to.equal(0);
+            expect(pendingBucket3.payments[1].amount).to.equal(0);
+            expect(pendingBucket3.payments[1].refunded).to.be.false;
         });
         
         it("add to an existing payment from the original buyer", async function () {
@@ -166,6 +227,13 @@ describe("PaymentBook: General", function () {
             );
             
             expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount1 + amount2);
+
+            const pendingBucket = convertPendingBucket(await paymentBook.getPendingPayments(addresses.receiver1));
+            expect(pendingBucket.total).to.equal(amount1 + amount2);
+            expect(pendingBucket.payments.length).to.equal(1);
+            expect(pendingBucket.payments[0].orderId).to.equal(oid);
+            expect(pendingBucket.payments[0].payer).to.equal(addresses.payer1);
+            expect(pendingBucket.payments[0].amount).to.equal(amount1 + amount2);
         });
 
         it("add to an existing payment from a different buyer", async function () {
@@ -179,15 +247,36 @@ describe("PaymentBook: General", function () {
             await paymentBook.addPendingPayment(
                 addresses.receiver1, oid, addresses.payer2, amount2
             );
-            
-            //TODO: asserts
+
+            const pendingPayment = await paymentBook.getPendingPayments(addresses.receiver1);
+            expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount1 + amount2);
+
+            //TODO: the second one is from a different buyer, so maybe the buyer should be added, or?
+            const pendingBucket = convertPendingBucket(await paymentBook.getPendingPayments(addresses.receiver1));
+            expect(pendingBucket.total).to.equal(amount1 + amount2);
+            expect(pendingBucket.payments.length).to.equal(1);
+            expect(pendingBucket.payments[0].orderId).to.equal(oid);
+            expect(pendingBucket.payments[0].payer).to.equal(addresses.payer1);
+            expect(pendingBucket.payments[0].amount).to.equal(amount1 + amount2);
         });
     });
 
     //TODO: move these all to paymentSwitch tests, because refunding is not the responsibility of PaymentBook
     describe("Refund Payments", function () {
         it("fully refund a pending payment", async function () {
-            
+            const oid = randomOrderId();
+            const amount = 100;
+            await paymentBook.addPendingPayment(
+                addresses.receiver1, oid, addresses.payer1, amount
+            );
+
+            expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
+            expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount);
+
+            const pendingBucket1 = convertPendingBucket(await paymentBook.getPendingPayments(addresses.receiver1));
+            expect(pendingBucket1.payments.length).to.equal(1);
+            expect(pendingBucket1.total).to.equal(amount);
+            expect(pendingBucket1.payments[0].refunded).to.be.false;
         });
 
         it("approve remaining payments after refunding payments", async function () {
@@ -205,7 +294,29 @@ describe("PaymentBook: General", function () {
 
     describe("Approve Payments", function () {
         it("approve payments for a single receiver", async function () {
-            //TODO: implement
+            const oid1 = randomOrderId();
+            const amount1 = 100;
+            await paymentBook.addPendingPayment(
+                addresses.receiver1, oid1, addresses.payer1, amount1
+            );
+
+            const oid2 = randomOrderId();
+            const amount2 = 200;
+            await paymentBook.addPendingPayment(
+                addresses.receiver1, oid2, addresses.payer2, amount2
+            );
+
+            expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
+            expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount1 + amount2);
+
+            //approve the receiver's pending transactions
+            await paymentBook.approvePendingBucket(addresses.receiver1);
+
+            expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(amount1 + amount2);
+            expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(0);
+            
+            //TODO: assert on approved payments
+            console.log(await paymentBook.getApprovedPayments(addresses.receiver1));
         });
 
         it("approve payments for multiple receivers", async function () {

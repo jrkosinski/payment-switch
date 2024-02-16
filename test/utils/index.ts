@@ -143,6 +143,23 @@ export async function getBalanceAsNumber(address: string | Addressable): Promise
     return parseInt((await ethers.provider.getBalance(address)).toString());
 }
 
+//TODO: comment 
+export function convertPendingBucket(response: any): any {
+    const output: { total: number, payments: any[] } = { total: 0, payments: [] };
+    output.total = parseInt(response[0]);
+    output.payments = [];
+    const objects = response[1][1];
+    objects.forEach((o: any) => {
+        output.payments.push({
+            orderId: parseInt(o[0]),
+            payer: o[1],
+            amount: parseInt(o[2]),
+            refunded: o[3]
+        });
+    });
+    return output;
+}
+
 export { revokeRole, grantRole, getSecurityManager } from "./security";
 export {
     deployPaymentSwitch,

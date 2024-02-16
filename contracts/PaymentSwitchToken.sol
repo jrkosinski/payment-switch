@@ -3,8 +3,8 @@ pragma solidity ^0.8.7;
 
 import "./PaymentSwitchBase.sol";
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol"; 
 
-//TODO: rename to PaymentSwitchNative
 /**
  * @title PaymentSwitch
  * 
@@ -15,15 +15,17 @@ import "hardhat/console.sol";
  * LoadPipe 2024
  * All rights reserved. Unauthorized use prohibited.
  */
-contract PaymentSwitch is PaymentSwitchBase
+contract PaymentSwitchToken is PaymentSwitchBase
 {
+    IERC20 public token; 
+    
     /**
      * Constructor. 
      * 
      * @param masterSwitch Address of the master switch contract.
      */
-    //TODO: remove the tokenAddress parameter
-    constructor(IMasterSwitch masterSwitch, address tokenAddress) PaymentSwitchBase(masterSwitch) {
+    constructor(IMasterSwitch masterSwitch, IERC20 tokenAddress) PaymentSwitchBase(masterSwitch) {
+        token = tokenAddress;
     }
     
     /**
@@ -32,16 +34,14 @@ contract PaymentSwitch is PaymentSwitchBase
      * @param seller Address to which the majority of the payment (minus fee) is due. 
      * @param payment Encapsulates the payment data. 
      */
-    function placePayment(address seller, PaymentRecord calldata payment) external payable onlyRole(SYSTEM_ROLE) {
-        //check that the amount is correct
-        if (payment.amount != msg.value)
-            revert PaymentAmountMismatch(payment.amount, msg.value);
-            
+    function placePayment(address seller, PaymentRecord calldata payment) external onlyRole(SYSTEM_ROLE) {
+        //amount should have been pre-approved; otherwise will revert 
+        token.transferFrom(seller, address(this), payment.amount);
+        
         _onPaymentReceived(seller, payment);
     }
     
     function _doSendPayment(address receiver, uint256 amount) internal override returns (bool) {
-        (bool success,) = payable(receiver).call{value: amount}("");
-        return success;
+        return token.transfer(receiver, amount);
     }
 }
