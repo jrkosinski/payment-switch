@@ -34,13 +34,16 @@ contract PaymentSwitchToken is PaymentSwitchBase
      * @param seller Address to which the majority of the payment (minus fee) is due. 
      * @param payment Encapsulates the payment data. 
      */
-    function placePayment(address seller, PaymentRecord calldata payment) external onlyRole(SYSTEM_ROLE) {
+    function placePayment(address seller, PaymentRecord calldata payment) external {
         //amount should have been pre-approved; otherwise will revert 
         token.transferFrom(seller, address(this), payment.amount);
         
         _onPaymentReceived(seller, payment);
     }
     
+    /**
+     * Overridden to send payment in the designated token.
+     */
     function _doSendPayment(address receiver, uint256 amount) internal override returns (bool) {
         return token.transfer(receiver, amount);
     }

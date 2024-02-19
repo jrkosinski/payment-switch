@@ -4,11 +4,12 @@ import {
     deploySecurityManager,
     deployPaymentSwitchNative, 
     getBalanceAsNumber,
-    deployMasterSwitch
-} from "../utils";
+    deployMasterSwitch,
+    createOrderId
+} from "../../utils";
 import { MasterSwitch, PaymentSwitchNative, SecurityManager } from "typechain";
-import { applySecurityRoles } from "../utils/security";
-import * as constants from "../constants";
+import { applySecurityRoles } from "../../utils/security";
+import * as constants from "../../constants";
 import { IPaymentRecord } from "test/IPaymentRecord";
 
 
@@ -32,7 +33,7 @@ describe("PaymentSwitch: Place Payments", function () {
 
     describe("Make Payments", function () {
         it("make and record a simple successful payment", async function () {
-            const orderId: number = 1109938; 
+            const orderId: number = createOrderId(); 
             const amount: number = 100000000; 
             const { payer, seller } = addresses;
             let paymentRecord: any = null;
@@ -40,10 +41,11 @@ describe("PaymentSwitch: Place Payments", function () {
             //initial values
             expect(await getBalanceAsNumber(paymentSwitch.target)).to.equal(0);
 
-            //TODO: make sure that no payment record exists already
-            //paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
-            //expect(parseInt(paymentRecord.amount)).to.equal(0);
+            //make sure that no payment record exists already
+            paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
+            expect(parseInt(paymentRecord.amount)).to.equal(0);
              
+            //place a payment 
             const paymentData: IPaymentRecord = {
                 amount, payer, orderId: orderId, refunded: false
             };

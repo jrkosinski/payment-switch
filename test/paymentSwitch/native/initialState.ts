@@ -5,9 +5,9 @@ import {
     deploySecurityManager,
     deployPaymentSwitchNative, 
     deployMasterSwitch
-} from "../utils";
+} from "../../utils";
 import { PaymentSwitchNative, MasterSwitch, SecurityManager } from "typechain";
-import { applySecurityRoles } from "../utils/security";
+import { applySecurityRoles } from "../../utils/security";
 
 
 describe("PaymentSwitch: Initial State", function () {

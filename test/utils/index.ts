@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Addressable } from "ethers";
+import { IPaymentRecord } from "../IPaymentRecord";
 
 /**
  * Verifies that an event was fired and that the values associated with the event are as 
@@ -158,6 +159,28 @@ export function convertPendingBucket(response: any): any {
         });
     });
     return output;
+}
+
+export function createOrderId() : number {
+    return Math.floor(Math.random() * 999999999) +1;
+}
+
+export async function placePayment(paymentSwitch: any, 
+    sellerAddr: string, 
+    buyerAddr: string, 
+    amount: number,
+    orderId: number = 0
+) {
+    if (orderId <= 0) {
+        orderId = createOrderId();
+    }
+    
+    const paymentData: IPaymentRecord = {
+        amount, payer: buyerAddr, orderId: orderId, refunded: false
+    };
+
+    await paymentSwitch.placePayment(sellerAddr, paymentData, { value: amount });
+    return paymentData;
 }
 
 export { revokeRole, grantRole, getSecurityManager } from "./security";

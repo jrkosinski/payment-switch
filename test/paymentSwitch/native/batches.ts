@@ -4,10 +4,10 @@ import {
     deploySecurityManager,
     deployPaymentSwitchNative,
     deployMasterSwitch
-} from "../utils";
+} from "../../utils";
 import { MasterSwitch, PaymentSwitchNative, SecurityManager } from "typechain";
-import { applySecurityRoles } from "../utils/security";
-import * as constants from "../constants";
+import { applySecurityRoles } from "../../utils/security";
+import * as constants from "../../constants";
 
 
 describe("Batches: Batches", function () {

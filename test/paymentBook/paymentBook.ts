@@ -261,37 +261,6 @@ describe("PaymentBook: General", function () {
         });
     });
 
-    //TODO: move these all to paymentSwitch tests, because refunding is not the responsibility of PaymentBook
-    describe("Refund Payments", function () {
-        it("fully refund a pending payment", async function () {
-            const oid = randomOrderId();
-            const amount = 100;
-            await paymentBook.addPendingPayment(
-                addresses.receiver1, oid, addresses.payer1, amount
-            );
-
-            expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
-            expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount);
-
-            const pendingBucket1 = convertPendingBucket(await paymentBook.getPendingPayments(addresses.receiver1));
-            expect(pendingBucket1.payments.length).to.equal(1);
-            expect(pendingBucket1.total).to.equal(amount);
-            expect(pendingBucket1.payments[0].refunded).to.be.false;
-        });
-
-        it("approve remaining payments after refunding payments", async function () {
-            //TODO: implement
-        });
-
-        it("attempt to refund payments that have been approved", async function () {
-            //TODO: implement
-        });
-        
-        it("partial refund", async function () {
-            //TODO: implement
-        });
-    });
-
     describe("Approve Payments", function () {
         it("approve payments for a single receiver", async function () {
             const oid1 = randomOrderId();

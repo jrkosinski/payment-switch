@@ -3,12 +3,13 @@ import {
     getTestAccounts,
     deploySecurityManager,
     deployPaymentSwitchNative, 
-    deployMasterSwitch
-} from "../utils";
+    deployMasterSwitch,
+    createOrderId
+} from "../../utils";
 import { MasterSwitch, PaymentSwitchNative, SecurityManager } from "typechain";
-import { applySecurityRoles } from "../utils/security";
-import { IPaymentRecord } from "../IPaymentRecord"; 
-import * as constants from "../constants";
+import { applySecurityRoles } from "../../utils/security";
+import { IPaymentRecord } from "../../IPaymentRecord"; 
+import * as constants from "../../constants";
 
 
 describe("PaymentSwitch: Approve Payments", function () {
@@ -31,14 +32,14 @@ describe("PaymentSwitch: Approve Payments", function () {
 
     describe("Approve Payments", function () {
         it("approve a simple successful payment", async function () {
-            const orderId: number = 1109938;
+            const orderId: number = createOrderId();
             const amount: number = 100000000;
             const { payer, seller } = addresses;
             let paymentRecord: any = null;
 
-            //TODO: make sure that no payment record exists already
-            //paymentRecord = await paymentSwitch.getPendingPayment(seller, orderId.toString());
-            //expect(parseInt(paymentRecord.amount)).to.equal(0);
+            //make sure that no payment record exists already
+            paymentRecord = await paymentSwitch.getPendingPayment(seller, orderId.toString());
+            expect(parseInt(paymentRecord.amount)).to.equal(0);
 
             const paymentData: IPaymentRecord = {
                 amount, payer, orderId: orderId, refunded: false

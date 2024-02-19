@@ -3,6 +3,10 @@ pragma solidity ^0.8.7;
 
 import "hardhat/console.sol";
 
+//TODO: batch for removed payments (while in dispute or processing) 
+//TODO: move removed payment back into a batch 
+//TODO: cut off pending batch for approval 
+
 /**
  * @title PaymentBook 
  * 
@@ -14,7 +18,11 @@ import "hardhat/console.sol";
  */
 contract PaymentBook
 {
+    //TODO: array of buckets. bucket[len-1] is pending, 
+    //bucket [len-2] is ready to approve, and all other buckets are approved
+    
     mapping(address => PaymentBucket) internal pendingBuckets; 
+    mapping(address => PaymentBucket) internal readyToApproveBucket; 
     mapping(address => PaymentBucket[]) internal approvedBuckets; 
     mapping(address => mapping(uint256 => uint256)) internal orderIdsToIndexes;  //TODO: this needs epochs or it will cause problems
     mapping(address => uint256) internal approvedFunds;

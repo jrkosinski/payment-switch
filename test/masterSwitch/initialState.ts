@@ -2,7 +2,6 @@ import { expect } from "chai";
 import {
     getTestAccounts,
     deploySecurityManager,
-    deployPaymentSwitchNative, 
     deployMasterSwitch
 } from "../utils";
 import { MasterSwitch, SecurityManager } from "typechain";
@@ -28,11 +27,9 @@ describe("MasterSwitch: Initial State", function () {
             master = await deployMasterSwitch(securityManager.target);
         });
 
-        describe("Initial State", function () {
-            it("initial values", async function () {
-                expect(parseInt(await master.feeBps())).to.equal(defaultFeeBps);
-                expect(await master.vaultAddress()).to.equal(ethers.ZeroAddress);
-            });
+        it("initial values", async function () {
+            expect(parseInt(await master.feeBps())).to.equal(defaultFeeBps);
+            expect(await master.vaultAddress()).to.equal(ethers.ZeroAddress);
         });
     });
 
@@ -47,11 +44,9 @@ describe("MasterSwitch: Initial State", function () {
             master = await deployMasterSwitch(securityManager.target, addresses.vault);
         });
 
-        describe("Initial State", function () {
-            it("initial values", async function () {
-                expect(parseInt(await master.feeBps())).to.equal(defaultFeeBps);
-                expect(await master.vaultAddress()).to.equal(addresses.vault);
-            });
+        it("initial values", async function () {
+            expect(parseInt(await master.feeBps())).to.equal(defaultFeeBps);
+            expect(await master.vaultAddress()).to.equal(addresses.vault);
         });
     });
 });

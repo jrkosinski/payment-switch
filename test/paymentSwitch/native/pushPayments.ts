@@ -4,11 +4,12 @@ import {
     deploySecurityManager,
     deployPaymentSwitchNative,
     getBalanceAsNumber,
-    deployMasterSwitch
-} from "../utils";
+    deployMasterSwitch,
+    createOrderId
+} from "../../utils";
 import { PaymentSwitchNative, MasterSwitch, SecurityManager } from "typechain";
-import { applySecurityRoles } from "../utils/security";
-import * as constants from "../constants";
+import { applySecurityRoles } from "../../utils/security";
+import * as constants from "../../constants";
 import { IPaymentRecord } from "test/IPaymentRecord";
 
 
@@ -34,7 +35,7 @@ describe("PaymentSwitch: Push Payments", function () {
 
     describe("Push Payments", function () {
         it("push a simple successful payment", async function () {
-            const orderId: number = 1109938;
+            const orderId: number = createOrderId();
             const amount: number = 1000000000;
             const { payer, seller } = addresses;
             let paymentRecord: any = null;

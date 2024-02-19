@@ -31,7 +31,7 @@ contract PaymentSwitchNative is PaymentSwitchBase
      * @param seller Address to which the majority of the payment (minus fee) is due. 
      * @param payment Encapsulates the payment data. 
      */
-    function placePayment(address seller, PaymentRecord calldata payment) external payable onlyRole(SYSTEM_ROLE) {
+    function placePayment(address seller, PaymentRecord calldata payment) external payable {
         //check that the amount is correct
         if (payment.amount != msg.value)
             revert PaymentAmountMismatch(payment.amount, msg.value);
@@ -39,6 +39,9 @@ contract PaymentSwitchNative is PaymentSwitchBase
         _onPaymentReceived(seller, payment);
     }
     
+    /**
+     * Overridden to send payment in native ETH.
+     */
     function _doSendPayment(address receiver, uint256 amount) internal override returns (bool) {
         (bool success,) = payable(receiver).call{value: amount}("");
         return success;

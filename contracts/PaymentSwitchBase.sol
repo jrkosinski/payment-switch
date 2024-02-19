@@ -12,7 +12,8 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  * @title PaymentSwitchBase
  * 
  * Takes in funds from marketplace, extracts a fee, and batches the payments for transfer
- * to the appropriate parties, holding the funds in escrow in the meantime. 
+ * to the appropriate parties, holding the funds in escrow in the meantime. This is the 
+ * base class from which native payment switches & token-based switches derive.
  * 
  * @author John R. Kosinski
  * LoadPipe 2024
@@ -42,6 +43,7 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
     //ERRORS 
     error PaymentAmountMismatch(uint256 amount1, uint256 amount2);
     error InvalidOrderId(uint256 orderId);
+    error InvalidRefundAmount(uint256 orderId, uint256 amount);
     error PaymentFailed(address receiver);
     
     
@@ -66,17 +68,14 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
     }
     
     /**
-     * Refunds and removes the identified payment. 
+     * Refunds all or part of the original payment. If the payment is fully refunded, then 
+     * it will also be removed.
      * 
      * @param receiver Intended receiver of the payment to be refunded.
      * @param orderId Identifier of the order for which the payment was placed.
+     * @param amount The amount to refund, cannot exceed remaining payment amount.
      */
-    function refundPayment(address receiver, uint256 orderId) external onlyRole(REFUNDER_ROLE) {
-        _refundPayment(receiver, orderId, 0);
-    }
-    
-    //TODO: comment
-    function refundPaymentPartial(address receiver, uint256 orderId, uint256 amount) external onlyRole(REFUNDER_ROLE) {
+    function refundPayment(address receiver, uint256 orderId, uint256 amount) external onlyRole(REFUNDER_ROLE) {
         _refundPayment(receiver, orderId, amount);
     }
     
@@ -160,12 +159,12 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
         
             //refund amount can't be greater than the original payment 
             if (amount > payment.amount) {
-                amount = payment.amount;
+                revert InvalidRefundAmount(orderId, amount);
             }
 
             //place refund amount into bucket for payer
             toPayOut[payment.payer] += amount;
-            toPayOut[receiver] -= amount; //TODO: check for overflow
+            //toPayOut[receiver] -= amount; //TODO: check for overflow
             
             //TODO: decrement payment amount 
             payment.amount -= amount;
