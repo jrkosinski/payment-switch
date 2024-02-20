@@ -38,15 +38,15 @@ describe("Batches: Batches", function () {
     }
 
     function toPaymentBucket(object: any) {
-        const output: { total: number, paymentList: {status: number, payments: IPayment[]}} = { total: 0, paymentList: { status: 0, payments: []}};
+        const output: { total: number, state: number, payments: IPayment[]} = { total: 0, state: 0, payments: [] };
         output.total = object.total;
-        output.paymentList.status = object.paymentList.status;
-        for (let n=0; n<object.paymentList.payments.length; n++) {
-            output.paymentList.payments.push(
+        output.state = object.state;
+        for (let n=0; n<object.payments.length; n++) {
+            output.payments.push(
                 { 
-                    orderId: object.paymentList.payments[n].orderId, 
-                    payer: object.paymentList.payments[n].payer, 
-                    amount: object.paymentList.payments[n].amount
+                    orderId: object.payments[n].orderId, 
+                    payer: object.payments[n].payer, 
+                    amount: object.payments[n].amount
                 }
             );
         }
@@ -63,7 +63,7 @@ describe("Batches: Batches", function () {
 
     describe("Approve Batched Payments", function () {
     
-        it("approve a simple successful payment", async function () {
+        it("approve a simple successful batch", async function () {
             let amount; 
             amount = 1000000;
             await paymentSwitch.placePayment(addresses.seller, {
@@ -90,22 +90,22 @@ describe("Batches: Batches", function () {
             console.log();
             console.log("after adding:")
             console.log(toPaymentBucket(await paymentSwitch.getPendingPayments(addresses.seller)));
-            console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
+            //console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
             
             await paymentSwitch.connect(accounts.approver).approvePayments(addresses.seller);
 
             console.log();
             console.log("after approving:")
             console.log(toPaymentBucket(await paymentSwitch.getPendingPayments(addresses.seller)));
-            console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
+            //console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
 
             await paymentSwitch.connect(accounts.dao).processPayments(addresses.seller);
 
             console.log();
             console.log("after processing:")
             console.log(toPaymentBucket(await paymentSwitch.getPendingPayments(addresses.seller)));
-            console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
-            console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller))[0].paymentList.payments);
+            //console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
+            //console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller))[0].paymentList.payments);
 
             amount = 4000000;
             await paymentSwitch.placePayment(addresses.seller, {
@@ -125,23 +125,23 @@ describe("Batches: Batches", function () {
             console.log();
             console.log("after adding more:")
             console.log(toPaymentBucket(await paymentSwitch.getPendingPayments(addresses.seller)));
-            console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
-            console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller))[0].paymentList.payments);
+            //console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
+            //console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller))[0].paymentList.payments);
 
             await paymentSwitch.connect(accounts.approver).approvePayments(addresses.seller);
 
             console.log();
             console.log("after approving again:")
             console.log(toPaymentBucket(await paymentSwitch.getPendingPayments(addresses.seller)));
-            console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
+            //console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
 
             await paymentSwitch.connect(accounts.dao).processPayments(addresses.seller);
 
             console.log();
             console.log("after processing again:")
             console.log(toPaymentBucket(await paymentSwitch.getPendingPayments(addresses.seller)));
-            console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
-            console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller))[0].paymentList.payments);
+            //console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
+            //console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller))[0].paymentList.payments);
 
         });
 
@@ -172,15 +172,15 @@ describe("Batches: Batches", function () {
             await paymentSwitch.connect(accounts.system).removePayment(addresses.seller, 200);
 
             console.log(toPaymentBucket(await paymentSwitch.getPendingPayments(addresses.seller)));
-            console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
+            //console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
 
             await paymentSwitch.connect(accounts.approver).approvePayments(addresses.seller); 
             
             console.log();
             console.log("after approving:")
             console.log(toPaymentBucket(await paymentSwitch.getPendingPayments(addresses.seller)));
-            console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
-            console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller))[0].paymentList.payments);
+            //console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
+            //console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller))[0].paymentList.payments);
 
             console.log(await paymentSwitch.getAmountOwed(addresses.seller));
         });

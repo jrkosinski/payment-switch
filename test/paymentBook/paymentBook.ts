@@ -52,7 +52,7 @@ describe("PaymentBook: General", function () {
 
             expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
             expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount);
-            
+
             const pendingBucket = convertPendingBucket(await paymentBook.getPendingPayments(addresses.receiver1));
             expect(pendingBucket.total).to.equal(amount);
             expect(pendingBucket.payments.length).to.equal(1);
@@ -274,18 +274,15 @@ describe("PaymentBook: General", function () {
             await paymentBook.addPendingPayment(
                 addresses.receiver1, oid2, addresses.payer2, amount2
             );
-
             expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(0);
             expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount1 + amount2);
 
             //approve the receiver's pending transactions
             await paymentBook.approvePendingBucket(addresses.receiver1);
-
             expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(amount1 + amount2);
             expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(0);
             
             //TODO: assert on approved payments
-            console.log(await paymentBook.getApprovedPayments(addresses.receiver1));
         });
 
         it("approve payments for multiple receivers", async function () {

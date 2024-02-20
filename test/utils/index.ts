@@ -149,7 +149,7 @@ export function convertPendingBucket(response: any): any {
     const output: { total: number, payments: any[] } = { total: 0, payments: [] };
     output.total = parseInt(response[0]);
     output.payments = [];
-    const objects = response[1][1];
+    const objects = response[1];
     objects.forEach((o: any) => {
         output.payments.push({
             orderId: parseInt(o[0]),

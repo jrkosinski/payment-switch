@@ -21,16 +21,23 @@ contract PaymentBook
     //TODO: array of buckets. bucket[len-1] is pending, 
     //bucket [len-2] is ready to approve, and all other buckets are approved
     
-    mapping(address => PaymentBucket) internal pendingBuckets; 
-    mapping(address => PaymentBucket) internal readyToApproveBucket; 
-    mapping(address => PaymentBucket[]) internal approvedBuckets; 
+    /*
+    mapping is receiver address => an array of payment buckets 
+    the LAST payment bucket is the 'pending' bucket' 
+    second to last is 'ready to approve' 
+    all subsequent ones are approved 
+    this order is enforced 
+    */
+    mapping(address => PaymentBucket[]) internal paymentBuckets; 
+    
     mapping(address => mapping(uint256 => uint256)) internal orderIdsToIndexes;  //TODO: this needs epochs or it will cause problems
     mapping(address => uint256) internal approvedFunds;
     
     //enum 
     uint8 constant STATE_PENDING = 1;
-    uint8 constant STATE_APPROVED = 2;
-    uint8 constant STATE_PROCESSED = 3;
+    uint8 constant STATE_READY = 2;
+    uint8 constant STATE_APPROVED = 3;
+    uint8 constant STATE_PROCESSED = 4;
     
     //errors
     error DuplicateEntry();
@@ -38,7 +45,8 @@ contract PaymentBook
     struct PaymentBucket 
     {
         uint256 total;
-        PaymentList paymentList;
+        PaymentRecord[] payments;
+        uint8 state;
     }
     
     struct PaymentRecord 
@@ -49,19 +57,11 @@ contract PaymentBook
         bool refunded;
     }
     
-    struct PaymentList 
-    {
-        uint8 status;
-        PaymentRecord[] payments;
-    }
-    
     
     function getPendingPayments(address receiver) public view returns (PaymentBucket memory) {
-        return pendingBuckets[receiver];
-    }
-    
-    function getApprovedPayments(address receiver) public view returns (PaymentBucket[] memory) {
-        return approvedBuckets[receiver];
+        if (!_hasPendingBucket(receiver))
+            revert("no pending payments");   //TODO: better revert custom error 
+        return _getPendingBucket(receiver);
     }
     
     function getAmountOwed(address receiver) public view returns (uint256) {
@@ -69,13 +69,22 @@ contract PaymentBook
     }
     
     function getAmountPending(address receiver) public view returns (uint256) {
-        return pendingBuckets[receiver].total; 
+        if (_hasPendingBucket(receiver))
+            return _getPendingBucket(receiver).total; 
+        return 0;
     }
     
+    //TODO: add method to freeze current pending bucket for approval 
     
     function _addPendingPayment(address receiver, uint256 orderId, address payer, uint256 amount) internal {
-        PaymentBucket storage pending = pendingBuckets[receiver];
-        pendingBuckets[receiver].paymentList.status = STATE_PENDING;
+        
+        //if no pending bucket exists, add one 
+        if (!_hasPendingBucket(receiver)) {
+            _appendBucket(receiver);
+        }
+        
+        //get the pending (last) bucket 
+        PaymentBucket storage pendingBucket = _getPendingBucket(receiver);
         
         //check for duplicate
         if (orderIdsToIndexes[receiver][orderId] > 0) {
@@ -84,56 +93,56 @@ contract PaymentBook
             payment.amount += amount;
         } else {
             //add the new payment record to the pending bucket
-            pending.paymentList.payments.push(PaymentRecord(orderId, payer, amount, false));
-            orderIdsToIndexes[receiver][orderId] = pending.paymentList.payments.length;
+            pendingBucket.payments.push(PaymentRecord(orderId, payer, amount, false));
+            orderIdsToIndexes[receiver][orderId] = pendingBucket.payments.length;
         }
         
-        pending.total += amount;
+        pendingBucket.total += amount;
     }
     
     function _removePendingPayment(address receiver, uint256 orderId) internal {
-        uint256 index = orderIdsToIndexes[receiver][orderId]; 
-        if (index > 0) {
-            PaymentRecord storage payment = pendingBuckets[receiver].paymentList.payments[index-1];  
-            payment.orderId = 0;
-            pendingBuckets[receiver].total -= payment.amount; 
-            payment.amount = 0;
+        if (_hasPendingBucket(receiver)) {
+            uint256 index = orderIdsToIndexes[receiver][orderId]; 
+            if (index > 0) {
+                //TODO: should pull from ready-to-approve bucket 
+                PaymentBucket storage pendingBucket = _getPendingBucket(receiver);
+                PaymentRecord storage payment = pendingBucket.payments[index-1];  
+                payment.orderId = 0;
+                pendingBucket.total -= payment.amount; 
+                payment.amount = 0;
+            }
         }
     }
     
     function _approvePendingBucket(address receiver) internal {
-        //make a copy of the pending bucket
-        PaymentBucket storage pending = pendingBuckets[receiver];
-        
-        //TODO: don't allow approval unless all approved buckets are processed
-        
-        //push that copy to approved 
-        pending.paymentList.status = STATE_APPROVED;
-        approvedBuckets[receiver].push(pending);
-        
-        //record the amount 
-        approvedFunds[receiver] += pending.total;
-        
-        //delete the payments from the actual pending bucket (they've been moved)
-        pending.total = 0; 
-        pending.paymentList.status = STATE_PENDING;
-        delete pending.paymentList.payments;
+        if (_hasPendingBucket(receiver)) {
+            //get a reference to the pending bucket
+            PaymentBucket storage pending = _getPendingBucket(receiver);
+            
+            //TODO: don't allow approval unless all approved buckets are processed first
+            
+            //push that copy to approved by adding a new bucket on top 
+            _appendBucket(receiver);
+            
+            //record the amount 
+            approvedFunds[receiver] += pending.total;
+        }
     }
     
     function _processApprovedBucket(address receiver) internal {
-        PaymentBucket[] storage approved = approvedBuckets[receiver];
+        PaymentBucket[] storage buckets = paymentBuckets[receiver]; 
         
-        //if there are approved buckets
-        if (approved.length > 0) {
-            PaymentBucket storage bucket = approved[approved.length-1];
-            
-            //if the most recent approved bucket has anything to approve
-            if (bucket.paymentList.status == STATE_APPROVED && bucket.total > 0) {
-                bucket.paymentList.status = STATE_PROCESSED;
+        //here, loop through approved buckets until the first processed one is found 
+        //TODO: should be 3, not 2
+        if (buckets.length >= 2) {
+            for(uint256 n=buckets.length-1; n>0; n--) { //avoiding underflow here
+                PaymentBucket storage bucket = buckets[n-1];
+                
+                //TODO: check bucket state & process 
             }
-            
-            approvedFunds[receiver] = 0;
         }
+            
+        approvedFunds[receiver] = 0;
     }
     
     function _getPendingPayment(address receiver, uint256 orderId) internal view returns (PaymentRecord storage) {
@@ -144,7 +153,7 @@ contract PaymentBook
         
         //TODO: if index == 0, it means there's no record; so do something good here
         
-        return pendingBuckets[receiver].paymentList.payments[index];
+        return _getPendingBucket(receiver).payments[index];
     }
     
     function _paymentExists(address receiver, uint256 orderId) internal view returns (bool) {
@@ -154,10 +163,42 @@ contract PaymentBook
     
     function _pendingPaymentExists(address receiver, uint256 orderId) internal view returns (bool) {
         uint256 index = orderIdsToIndexes[receiver][orderId]; 
-        return (
-            index > 0 && 
-            pendingBuckets[receiver].paymentList.payments.length >= index && 
-            pendingBuckets[receiver].paymentList.payments[index-1].orderId == orderId
-        );
+        bool output = false; 
+        
+        if (index > 0 && _hasPendingBucket(receiver)) {
+            PaymentBucket storage pendingBucket = _getPendingBucket(receiver);
+            output = pendingBucket.payments.length >= index && 
+                pendingBucket.payments[index-1].orderId == orderId;
+        }
+        
+        return output;
+    }
+    
+    function _hasPendingBucket(address receiver) internal view returns (bool) {
+        return paymentBuckets[receiver].length > 0;
+    }
+    
+    function _hasReadyToApproveBucket(address receiver) internal view returns (bool) {
+        return paymentBuckets[receiver].length > 1;
+    }
+    
+    function _getPendingBucket(address receiver) internal view returns (PaymentBucket storage) {
+        return paymentBuckets[receiver][paymentBuckets[receiver].length-1];
+    }
+    
+    function _getReadyToApproveBucket(address receiver) internal view returns (PaymentBucket storage) {
+        return paymentBuckets[receiver][paymentBuckets[receiver].length-2];
+    }
+    
+    function _appendBucket(address receiver) internal {
+        uint256 currentLen = paymentBuckets[receiver].length;
+        
+        //TODO: have to enforce rules here
+        if (currentLen > 0) {
+            paymentBuckets[receiver][currentLen-1].state = STATE_READY;
+        }
+        
+        paymentBuckets[receiver].push();
+        paymentBuckets[receiver][currentLen].state = STATE_PENDING;
     }
 }
