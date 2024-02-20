@@ -74,7 +74,17 @@ contract PaymentBook
         return 0;
     }
     
-    //TODO: add method to freeze current pending bucket for approval 
+    //TODO: this function must be private 
+    function _pendingToReady(address receiver) internal {
+        //there must be a pending bucket for this to work
+        if (_hasPendingBucket(receiver)) {
+            
+            //there must not be a ready bucket already, in order for this to work 
+            if (!_hasReadyBucket(receiver)) {
+                _appendBucket(receiver);
+            }
+        }
+    }
     
     function _addPendingPayment(address receiver, uint256 orderId, address payer, uint256 amount) internal {
         
@@ -114,12 +124,14 @@ contract PaymentBook
         }
     }
     
-    function _approvePendingBucket(address receiver) internal {
-        if (_hasPendingBucket(receiver)) {
-            //get a reference to the pending bucket
-            PaymentBucket storage pending = _getPendingBucket(receiver);
+    function _approveReadyBucket(address receiver) internal {
+        if (_hasReadyBucket(receiver)) {
+            //get a reference to the ready bucket
+            PaymentBucket storage pending = _getReadyBucket(receiver);
             
-            //TODO: don't allow approval unless all approved buckets are processed first
+            //don't allow approval unless all approved buckets are processed first
+            if (_hasApprovedBucket(receiver))
+                revert("already has approved bucket"); //TODO: better revert error 
             
             //push that copy to approved by adding a new bucket on top 
             _appendBucket(receiver);
@@ -133,12 +145,15 @@ contract PaymentBook
         PaymentBucket[] storage buckets = paymentBuckets[receiver]; 
         
         //here, loop through approved buckets until the first processed one is found 
-        //TODO: should be 3, not 2
-        if (buckets.length >= 2) {
-            for(uint256 n=buckets.length-1; n>0; n--) { //avoiding underflow here
+        if (buckets.length >= 1) {
+            for(uint256 n=buckets.length; n>0; n--) { //avoiding underflow here
                 PaymentBucket storage bucket = buckets[n-1];
                 
                 //TODO: check bucket state & process 
+                if (bucket.state == STATE_APPROVED) {
+                    bucket.state = STATE_PROCESSED;
+                    break;
+                }
             }
         }
             
@@ -178,27 +193,56 @@ contract PaymentBook
         return paymentBuckets[receiver].length > 0;
     }
     
-    function _hasReadyToApproveBucket(address receiver) internal view returns (bool) {
-        return paymentBuckets[receiver].length > 1;
+    function _hasReadyBucket(address receiver) internal view returns (bool) {
+        PaymentBucket[] memory buckets = paymentBuckets[receiver];
+        return buckets.length > 1 && buckets[buckets.length-2].state == STATE_READY;
+    }
+    
+    function _hasApprovedBucket(address receiver) internal view returns (bool) {
+        PaymentBucket[] memory buckets = paymentBuckets[receiver]; 
+        for (uint256 n=buckets.length; n>0; n--) {
+            
+            //at the first approved, return true 
+            if (buckets[n-1].state == STATE_APPROVED) 
+                return true; 
+                
+            //break at first processed one; there will be no more approved past this
+            if (buckets[n-1].state == STATE_PROCESSED) 
+                break;
+        }
+        
+        //if here, none were found 
+        return false;
     }
     
     function _getPendingBucket(address receiver) internal view returns (PaymentBucket storage) {
         return paymentBuckets[receiver][paymentBuckets[receiver].length-1];
     }
     
-    function _getReadyToApproveBucket(address receiver) internal view returns (PaymentBucket storage) {
+    function _getReadyBucket(address receiver) internal view returns (PaymentBucket storage) {
         return paymentBuckets[receiver][paymentBuckets[receiver].length-2];
     }
     
-    function _appendBucket(address receiver) internal {
-        uint256 currentLen = paymentBuckets[receiver].length;
+    function _appendBucket(address receiver) internal returns (bool) {
+        PaymentBucket[] storage buckets = paymentBuckets[receiver]; 
         
-        //TODO: have to enforce rules here
-        if (currentLen > 0) {
-            paymentBuckets[receiver][currentLen-1].state = STATE_READY;
+        //if no buckets yet, first one is pending 
+        if (buckets.length == 0) {
+            buckets.push();
+            buckets[0].state = STATE_PENDING;
+            return true;
         }
         
-        paymentBuckets[receiver].push();
-        paymentBuckets[receiver][currentLen].state = STATE_PENDING;
+        //not allowed to have two ready or two pending buckets at once
+        if (buckets.length > 1 && buckets[buckets.length-2].state <= STATE_READY)
+            return false;
+            
+        buckets.push();
+        
+        //pending bucket becomes ready bucket; new bucket is pending
+        buckets[buckets.length-1].state = STATE_PENDING;
+        buckets[buckets.length-2].state = STATE_READY;
+        
+        return true;
     }
 }

@@ -61,6 +61,7 @@ describe("PaymentSwitch: Push Payments", function () {
             expect(await getBalanceAsNumber(paymentSwitch.target)).to.equal(amount);
 
             //approve the payment 
+            await paymentSwitch.pendingToReady(seller);
             await paymentSwitch.approvePayments(seller);
 
             //TODO: shouldn't fail 

@@ -91,7 +91,8 @@ describe("Batches: Batches", function () {
             console.log("after adding:")
             console.log(toPaymentBucket(await paymentSwitch.getPendingPayments(addresses.seller)));
             //console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
-            
+
+            await paymentSwitch.connect(accounts.approver).pendingToReady(addresses.seller);
             await paymentSwitch.connect(accounts.approver).approvePayments(addresses.seller);
 
             console.log();
@@ -128,6 +129,7 @@ describe("Batches: Batches", function () {
             //console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
             //console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller))[0].paymentList.payments);
 
+            await paymentSwitch.connect(accounts.approver).pendingToReady(addresses.seller);
             await paymentSwitch.connect(accounts.approver).approvePayments(addresses.seller);
 
             console.log();

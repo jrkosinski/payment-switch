@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.7;
+
 import "../PaymentBook.sol";
 
 contract TestPaymentBook is PaymentBook
@@ -11,8 +13,12 @@ contract TestPaymentBook is PaymentBook
         _removePendingPayment(receiver, orderId);
     }
     
-    function approvePendingBucket(address receiver) external {
-        _approvePendingBucket(receiver);
+    function makeReadyBucket(address receiver) external {
+        _appendBucket(receiver);
+    }
+    
+    function approveReadyBucket(address receiver) external {
+        _approveReadyBucket(receiver);
     }
     
     function processApprovedBucket(address receiver) external {

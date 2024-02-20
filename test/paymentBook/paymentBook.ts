@@ -278,7 +278,8 @@ describe("PaymentBook: General", function () {
             expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount1 + amount2);
 
             //approve the receiver's pending transactions
-            await paymentBook.approvePendingBucket(addresses.receiver1);
+            await paymentBook.makeReadyBucket(addresses.receiver1);
+            await paymentBook.approveReadyBucket(addresses.receiver1);
             expect(parseInt(await paymentBook.getAmountOwed(addresses.receiver1))).to.equal(amount1 + amount2);
             expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(0);
             

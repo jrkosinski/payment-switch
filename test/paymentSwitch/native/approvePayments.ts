@@ -54,6 +54,7 @@ describe("PaymentSwitch: Approve Payments", function () {
             expect(parseInt(await paymentSwitch.getAmountOwed(seller))).to.equal(0);
             
             //approve the payment 
+            await paymentSwitch.pendingToReady(seller);
             await paymentSwitch.approvePayments(seller);
 
             //payment should be approved

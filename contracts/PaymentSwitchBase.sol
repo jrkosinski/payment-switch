@@ -87,8 +87,13 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
     }
     
     //TODO: comment 
+    function pendingToReady(address receiver) public onlyRole(APPROVER_ROLE) {
+        _pendingToReady(receiver);
+    }
+    
+    //TODO: comment 
     function approvePayments(address receiver) public onlyRole(APPROVER_ROLE) {
-        _approvePendingBucket(receiver);
+        _approveReadyBucket(receiver);
     }
     
     //TODO: replace with processBatch
