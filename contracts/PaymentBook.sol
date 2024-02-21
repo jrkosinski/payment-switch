@@ -144,7 +144,6 @@ contract PaymentBook
         pendingBucket.total += amount;
     }
     
-    //TODO: (HIGH) restrict what types of buckets allow removal of payments
     function _removePayment(address receiver, uint256 orderId) internal {
         BucketLocation memory location = orderIdsToBuckets[orderId]; 
             
@@ -153,16 +152,30 @@ contract PaymentBook
             PaymentRecord storage payment = bucket.payments[location.paymentIndex-1]; 
             
             //revert if bucket is not pending or ready
-            
+            if (bucket.state != STATE_PENDING && bucket.state != STATE_FOR_REVIEW) 
+                revert("Payment cannot be removed from non-pending, non-review bucket"); //TODO: better revert error
             
             //TODO: (HIGH) revert if order id is wrong 
+            
+            //create a copy to move to review 
+            PaymentRecord memory reviewRecord; 
+            reviewRecord.orderId = payment.orderId;
+            reviewRecord.amount = payment.amount; 
+            reviewRecord.payer = payment.payer; 
+            reviewRecord.refunded = payment.refunded;
+            
+            //move it to the review bucket
+            PaymentBucket storage reviewBucket = paymentBuckets[receiver][0];
+            reviewBucket.payments.push(reviewRecord); 
+            reviewBucket.total += reviewRecord.amount;
+            orderIdsToBuckets[orderId].bucketIndex = 0;
+            orderIdsToBuckets[orderId].paymentIndex = reviewBucket.payments.length;
+            
+            //remove it from its current bucket
             payment.orderId = 0;
             bucket.total -= payment.amount; 
             payment.amount = 0;
             payment.payer = address(0);
-            
-            //TODO: (HIGH) remove from orderIdsToBuckets
-            //TODO: (MED) actually move it someplace 
         }
     }
     
