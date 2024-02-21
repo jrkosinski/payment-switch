@@ -31,10 +31,11 @@ contract PaymentBook
     mapping(uint256 => BucketLocation) internal orderIdsToBuckets; // order Id => bucket location (where order is found)
     
     //enum 
-    uint8 constant STATE_PENDING = 1;
-    uint8 constant STATE_REVIEW = 2;
-    uint8 constant STATE_APPROVED = 3;
-    uint8 constant STATE_PROCESSED = 4;
+    uint8 constant STATE_PENDING = 1;       //just added
+    uint8 constant STATE_READY = 2;         //ready to be approved
+    uint8 constant STATE_APPROVED = 3;      //approved, ready to pay out
+    uint8 constant STATE_PROCESSED = 4;     //paid out, finished (end state)
+    uint8 constant STATE_FOR_REVIEW = 5;    //has been removed for admin review
     
     //errors
     error DuplicateEntry();
@@ -114,9 +115,18 @@ contract PaymentBook
         PaymentBucket storage pendingBucket = _getPendingBucket(receiver);
         
         //check for duplicate
-        if (orderIdsToBuckets[orderId].bucketIndex > 0) {
+        uint256 bucketIndex = orderIdsToBuckets[orderId].bucketIndex;
+        if (bucketIndex > 0) {
+            //if the bucket it's in is not pending, ready, or review, then revert 
+            if (bucketIndex > 2) {
+                //index 1 is review
+                //index 2 would be pending 
+                //index 3 could be ready, or could be approved
+                if (paymentBuckets[receiver][bucketIndex-1].state != STATE_READY) 
+                    revert("Order cannot be added to"); //TODO: better revert error
+            }
+                
             //if duplicate, add to the amount 
-            //TODO: (HIGH) make sure that it's pending, or to get the right bucket
             PaymentRecord storage payment = _getPayment(receiver, orderId); 
             payment.amount += amount;
         } else {
@@ -141,6 +151,9 @@ contract PaymentBook
         if (location.paymentIndex > 0 && location.receiver == receiver) {
             PaymentBucket storage bucket = paymentBuckets[receiver][location.bucketIndex-1];
             PaymentRecord storage payment = bucket.payments[location.paymentIndex-1]; 
+            
+            //revert if bucket is not pending or ready
+            
             
             //TODO: (HIGH) revert if order id is wrong 
             payment.orderId = 0;
@@ -212,12 +225,12 @@ contract PaymentBook
     }
     
     function _hasPendingBucket(address receiver) internal view returns (bool) {
-        return paymentBuckets[receiver].length > 0;
+        return paymentBuckets[receiver].length > 1;
     }
     
     function _hasReadyBucket(address receiver) internal view returns (bool) {
         PaymentBucket[] storage buckets = paymentBuckets[receiver];
-        return buckets.length > 1 && buckets[buckets.length-2].state == STATE_REVIEW;
+        return buckets.length > 1 && buckets[buckets.length-2].state == STATE_READY;
     }
     
     function _hasApprovedBucket(address receiver) internal view returns (bool) {
@@ -248,22 +261,23 @@ contract PaymentBook
     function _appendBucket(address receiver) internal returns (bool) {
         PaymentBucket[] storage buckets = paymentBuckets[receiver]; 
         
-        //if no buckets yet, first one is pending 
+        //if no buckets yet, first one is review, second is pending 
         if (buckets.length == 0) {
             buckets.push();
-            buckets[0].state = STATE_PENDING;
+            buckets.push();
+            buckets[0].state = STATE_FOR_REVIEW;
+            buckets[1].state = STATE_PENDING;
             return true;
         }
         
         //not allowed to have two ready or two pending buckets at once
-        if (buckets.length > 1 && buckets[buckets.length-2].state <= STATE_REVIEW)
+        if (buckets.length > 2 && buckets[buckets.length-3].state <= STATE_READY)
             return false;
             
-        buckets.push();
-        
         //pending bucket becomes ready bucket; new bucket is pending
+        buckets[buckets.length-1].state = STATE_READY;
+        buckets.push();
         buckets[buckets.length-1].state = STATE_PENDING;
-        buckets[buckets.length-2].state = STATE_REVIEW;
         
         return true;
     }
