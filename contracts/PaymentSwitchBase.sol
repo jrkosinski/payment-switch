@@ -98,7 +98,7 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
     
     //TODO: replace with processBatch
     function processPayments(address receiver) external onlyRole(DAO_ROLE) {
-        uint256 amount = approvedFunds[receiver]; 
+        uint256 amount = getAmountApproved(receiver);
         
         //break off fee 
         uint256 fee = 0;
@@ -115,7 +115,7 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
         toPayOut[masterSwitch.vaultAddress()] += fee; 
         
         //process the payment book 
-        _processApprovedBucket(receiver);
+        _processApprovedBuckets(receiver);
     }
     
     /**

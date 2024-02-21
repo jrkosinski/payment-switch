@@ -21,7 +21,11 @@ contract TestPaymentBook is PaymentBook
         _approveReadyBucket(receiver);
     }
     
-    function processApprovedBucket(address receiver) external {
-        _processApprovedBucket(receiver);
+    function processApprovedBuckets(address receiver) external {
+        _processApprovedBuckets(receiver);
+    }
+    
+    function getBucketCount(address receiver) external view returns (uint256) {
+        return paymentBuckets[receiver].length;
     }
 }

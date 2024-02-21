@@ -184,7 +184,7 @@ describe("Batches: Batches", function () {
             //console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));
             //console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller))[0].paymentList.payments);
 
-            console.log(await paymentSwitch.getAmountOwed(addresses.seller));
+            console.log(await paymentSwitch.getAmountApproved(addresses.seller));
         });
     });
 });

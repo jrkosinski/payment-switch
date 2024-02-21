@@ -51,7 +51,7 @@ describe("PaymentSwitch: Approve Payments", function () {
             paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
             expect(parseInt(paymentRecord.orderId)).to.equal(orderId);
             expect(parseInt(paymentRecord.amount)).to.equal(amount);
-            expect(parseInt(await paymentSwitch.getAmountOwed(seller))).to.equal(0);
+            expect(parseInt(await paymentSwitch.getAmountApproved(seller))).to.equal(0);
             
             //approve the payment 
             await paymentSwitch.pendingToReady(seller);
@@ -66,7 +66,7 @@ describe("PaymentSwitch: Approve Payments", function () {
             expect(parseInt(paymentRecord.orderId)).to.equal(0);
             
             //approved payments should be in the holding pot 
-            expect(parseInt(await paymentSwitch.getAmountOwed(seller))).to.equal(amount);
+            expect(parseInt(await paymentSwitch.getAmountApproved(seller))).to.equal(amount);
         });
     });
 });
