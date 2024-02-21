@@ -263,12 +263,15 @@ describe("PaymentBook: General", function () {
 
     describe("Approve Payments", function () {
         it("approve payments for a single receiver", async function () {
+
+            //add a payment 
             const oid1 = randomOrderId();
             const amount1 = 100;
             await paymentBook.addPendingPayment(
                 addresses.receiver1, oid1, addresses.payer1, amount1
             );
 
+            //add a payment 
             const oid2 = randomOrderId();
             const amount2 = 200;
             await paymentBook.addPendingPayment(

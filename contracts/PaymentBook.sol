@@ -5,7 +5,6 @@ import "hardhat/console.sol";
 
 //TODO: batch for removed payments (while in dispute or processing) 
 //TODO: move removed payment back into a batch 
-//TODO: cut off pending batch for approval 
 
 /**
  * @title PaymentBook 
@@ -28,7 +27,8 @@ contract PaymentBook
     all subsequent ones are approved 
     this order is enforced 
     */
-    mapping(address => PaymentBucket[]) internal paymentBuckets; 
+    mapping(address => PaymentBucket[]) internal paymentBuckets;  // receiver address => buckets[]
+    mapping(uint256 => BucketLocation) internal orderIdsToBuckets; // order Id => bucket location (where order is found)
     
     //enum 
     uint8 constant STATE_PENDING = 1;
@@ -44,14 +44,13 @@ contract PaymentBook
         uint256 total;
         PaymentRecord[] payments;
         uint8 state;
-        mapping(uint256 => uint256) ordersToIndexes;
     }
     
-    struct PaymentBucketLite 
+    struct BucketLocation 
     {
-        uint256 total;
-        PaymentRecord[] payments;
-        uint8 state;
+        address receiver;
+        uint256 bucketIndex;
+        uint256 paymentIndex;
     }
     
     struct PaymentRecord 
@@ -62,17 +61,11 @@ contract PaymentBook
         bool refunded;
     }
     
-    //TODO: PaymentBucketLite? 
-    function getPendingPayments(address receiver) public view returns (PaymentBucketLite memory) {
+    function getPendingPayments(address receiver) public view returns (PaymentBucket memory) {
         if (!_hasPendingBucket(receiver))
             revert("no pending payments");   //TODO: better revert custom error 
             
-        PaymentBucket storage bucket = _getPendingBucket(receiver);
-        PaymentBucketLite memory output; 
-        output.payments = bucket.payments; 
-        output.total = bucket.total; 
-        
-        return output;
+        return _getPendingBucket(receiver);
     }
     
     function getAmountPending(address receiver) public view returns (uint256) {
@@ -121,31 +114,42 @@ contract PaymentBook
         PaymentBucket storage pendingBucket = _getPendingBucket(receiver);
         
         //check for duplicate
-        if (pendingBucket.ordersToIndexes[orderId] > 0) {
+        if (orderIdsToBuckets[orderId].bucketIndex > 0) {
             //if duplicate, add to the amount 
-            PaymentRecord storage payment = _getPendingPayment(receiver, orderId); 
+            //TODO: (HIGH) make sure that it's pending, or to get the right bucket
+            PaymentRecord storage payment = _getPayment(receiver, orderId); 
             payment.amount += amount;
         } else {
             //add the new payment record to the pending bucket
             pendingBucket.payments.push(PaymentRecord(orderId, payer, amount, false));
-            pendingBucket.ordersToIndexes[orderId] = pendingBucket.payments.length;
+            
+            //add the location of the payment for reference
+            BucketLocation memory location; 
+            location.receiver = receiver;
+            location.bucketIndex = paymentBuckets[receiver].length;
+            location.paymentIndex = pendingBucket.payments.length;
+            orderIdsToBuckets[orderId] = location;
         }
         
         pendingBucket.total += amount;
     }
     
-    //TODO: should pull out of the ready-to-approve bucket, not pending
-    function _removePendingPayment(address receiver, uint256 orderId) internal {
-        if (_hasPendingBucket(receiver)) {
-            PaymentBucket storage pendingBucket = _getPendingBucket(receiver);
-            uint256 index = pendingBucket.ordersToIndexes[orderId]; 
-            if (index > 0) {
-                PaymentRecord storage payment = pendingBucket.payments[index-1];  
-                payment.orderId = 0;
-                pendingBucket.total -= payment.amount; 
-                pendingBucket.ordersToIndexes[orderId] = 0;
-                payment.amount = 0;
-            }
+    //TODO: (HIGH) restrict what types of buckets allow removal of payments
+    function _removePayment(address receiver, uint256 orderId) internal {
+        BucketLocation memory location = orderIdsToBuckets[orderId]; 
+            
+        if (location.paymentIndex > 0 && location.receiver == receiver) {
+            PaymentBucket storage bucket = paymentBuckets[receiver][location.bucketIndex-1];
+            PaymentRecord storage payment = bucket.payments[location.paymentIndex-1]; 
+            
+            //TODO: (HIGH) revert if order id is wrong 
+            payment.orderId = 0;
+            bucket.total -= payment.amount; 
+            payment.amount = 0;
+            payment.payer = address(0);
+            
+            //TODO: (HIGH) remove from orderIdsToBuckets
+            //TODO: (MED) actually move it someplace 
         }
     }
     
@@ -177,39 +181,34 @@ contract PaymentBook
         }
     }
     
-    function _getPendingPayment(address receiver, uint256 orderId) internal view returns (PaymentRecord storage) {
-        PaymentBucket storage pendingBucket = _getPendingBucket(receiver);
-        uint256 index = pendingBucket.ordersToIndexes[orderId]; 
+    function _getPayment(address receiver, uint256 orderId) internal view returns (PaymentRecord storage) {
+        PaymentBucket storage bucket = _getPendingBucket(receiver);
+        BucketLocation memory location = orderIdsToBuckets[orderId];
+        uint256 index = location.paymentIndex;
         if (index > 0) {
             index -= 1;
         }
         
         //TODO: if index == 0, it means there's no record; so do something good here
         
-        return _getPendingBucket(receiver).payments[index];
+        return bucket.payments[index];
     }
     
     function _paymentExists(address receiver, uint256 orderId) internal view returns (bool) {
-        //TODO: how many buckets to check here? 
-        if (_hasPendingBucket(receiver)) {
-            if (_getPendingBucket(receiver).ordersToIndexes[orderId] > 0)
-                return true;
-                
-            if (_hasReadyBucket(receiver)) {
-                if (_getReadyBucket(receiver).ordersToIndexes[orderId] > 0)
-                    return true;
-            }
-        }
-        
-        return false;
+        BucketLocation memory location = orderIdsToBuckets[orderId];
+        return location.receiver == receiver && location.bucketIndex > 0; 
     }
     
     function _pendingPaymentExists(address receiver, uint256 orderId) internal view returns (bool) {
-        if (_hasPendingBucket(receiver)) {
-            return (_getPendingBucket(receiver).ordersToIndexes[orderId] > 0);
-        }
-        
-        return false;
+        BucketLocation memory location = orderIdsToBuckets[orderId];
+        return location.receiver == receiver && location.bucketIndex > 0 && 
+            paymentBuckets[receiver][location.bucketIndex-1].state == STATE_PENDING; 
+    }
+    
+    function _approvedPaymentExists(address receiver, uint256 orderId) internal view returns (bool) {
+        BucketLocation memory location = orderIdsToBuckets[orderId];
+        return location.receiver == receiver && location.bucketIndex > 0 && 
+            paymentBuckets[receiver][location.bucketIndex-1].state == STATE_APPROVED; 
     }
     
     function _hasPendingBucket(address receiver) internal view returns (bool) {

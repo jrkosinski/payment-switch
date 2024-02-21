@@ -10,7 +10,7 @@ contract TestPaymentBook is PaymentBook
     }
     
     function removePendingPayment(address receiver, uint256 orderId) external {
-        _removePendingPayment(receiver, orderId);
+        _removePayment(receiver, orderId);
     }
     
     function makeReadyBucket(address receiver) external {

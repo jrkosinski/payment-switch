@@ -64,7 +64,7 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
      * @param orderId Identifier of the order for which the payment was placed.
      */
     function removePayment(address receiver, uint256 orderId) external onlyRole(SYSTEM_ROLE) {
-        _removePendingPayment(receiver, orderId); 
+        _removePayment(receiver, orderId); 
     }
     
     /**
@@ -143,13 +143,13 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
     function getPendingPayment(address receiver, uint256 orderId) public view returns (PaymentRecord memory) {
         PaymentRecord memory payment;
         if (_pendingPaymentExists(receiver, orderId)) {
-            payment = _getPendingPayment(receiver, orderId);
+            payment = _getPayment(receiver, orderId);
         }
         return payment;
     }
     
     function _refundPayment(address receiver, uint256 orderId, uint256 amount) internal nonReentrant {
-        PaymentRecord storage payment = _getPendingPayment(receiver, orderId); 
+        PaymentRecord storage payment = _getPayment(receiver, orderId); 
         
         //throw if order invalid 
         if (payment.payer == address(0)) {
@@ -177,7 +177,7 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
             //remove payment if amount is now 0
             if (payment.amount == 0) {
                 payment.refunded = true;
-                _removePendingPayment(receiver, orderId); 
+                _removePayment(receiver, orderId); 
             }
         }
     }

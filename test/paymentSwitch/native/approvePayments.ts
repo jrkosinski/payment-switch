@@ -45,7 +45,7 @@ describe("PaymentSwitch: Approve Payments", function () {
                 amount, payer, orderId: orderId, refunded: false
             };
 
-            await paymentSwitch.placePayment(seller, paymentData, { value: amount }); 
+            await paymentSwitch.placePayment(seller, paymentData, { value: amount });
             
             //initial values 
             paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
