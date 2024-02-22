@@ -2,20 +2,22 @@ import { expect } from "chai";
 import {
     getTestAccounts,
     deploySecurityManager,
-    deployPaymentSwitchNative, 
+    deployPaymentSwitchToken, 
     deployMasterSwitch,
-    createOrderId
+    createOrderId,
+    deployTestToken
 } from "../../utils";
-import { MasterSwitch, PaymentSwitchNative, SecurityManager } from "typechain";
+import { MasterSwitch, PaymentSwitchToken, SecurityManager, TestToken } from "typechain";
 import { applySecurityRoles } from "../../utils/security";
 import { IPaymentRecord } from "../../IPaymentRecord"; 
 import * as constants from "../../constants";
 
 
-describe("PaymentSwitch Native: Approve Payments", function () {
-    let paymentSwitch: PaymentSwitchNative;
+describe("PaymentSwitch Token: Approve Payments", function () {
+    let paymentSwitch: PaymentSwitchToken;
     let masterSwitch: MasterSwitch;
     let securityManager: SecurityManager;
+    let token: TestToken;
 
     let addresses: any = {};
 
@@ -24,16 +26,23 @@ describe("PaymentSwitch Native: Approve Payments", function () {
         addresses = acc.addresses;
         securityManager = await deploySecurityManager(addresses.admin);
         masterSwitch = await deployMasterSwitch(securityManager.target);
-        paymentSwitch = await deployPaymentSwitchNative(masterSwitch.target);
+        token = await deployTestToken();
+        paymentSwitch = await deployPaymentSwitchToken(masterSwitch.target, token.target);
 
         //apply security roles
         await applySecurityRoles(securityManager, addresses);
+        
+        //mint token 
+        await Promise.all([
+            token.mintToCaller(800000000),
+            token.mint(addresses.payer, 800000000)
+        ]);
     });
 
     describe("Approve Payments", function () {
         it("approve a simple successful payment", async function () {
             const orderId: number = createOrderId();
-            const amount: number = 100000000;
+            const amount: number = 10000000;
             const { payer, seller } = addresses;
             let paymentRecord: any = null;
 
@@ -45,7 +54,9 @@ describe("PaymentSwitch Native: Approve Payments", function () {
                 amount, payer, orderId: orderId, refunded: false
             };
 
-            await paymentSwitch.placePayment(seller, paymentData, { value: amount });
+            //approve & pay
+            await token.approve(paymentSwitch.target.toString(), paymentData.amount);
+            await paymentSwitch.placePayment(seller, paymentData);
             
             //initial values 
             paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
@@ -67,6 +78,8 @@ describe("PaymentSwitch Native: Approve Payments", function () {
             
             //approved payments should be in the holding pot 
             expect(parseInt(await paymentSwitch.getAmountApproved(seller))).to.equal(amount);
+            
+            //TODO: check token balances 
         });
     });
 });

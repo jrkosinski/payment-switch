@@ -179,6 +179,14 @@ contract PaymentBook
         }
     }
     
+    function _replacePayment(address receiver, uint256 orderId) internal {
+        BucketLocation memory location = orderIdsToBuckets[orderId]; 
+            
+        //TODO: (HIGH) ensure that payment is in review bucket 
+        //TODO: (HIGH) remove from review bucekt 
+        //TODO: (HIGH) copy into current ready bucket 
+    }
+    
     function _approveReadyBucket(address receiver) internal {
         if (_hasReadyBucket(receiver)) {
             //TODO: might want to limit the number of approved buckets to a small number

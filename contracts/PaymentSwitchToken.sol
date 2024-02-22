@@ -23,6 +23,7 @@ contract PaymentSwitchToken is PaymentSwitchBase
      * Constructor. 
      * 
      * @param masterSwitch Address of the master switch contract.
+     * @param tokenAddress Address of the token to be used as payment.
      */
     constructor(IMasterSwitch masterSwitch, IERC20 tokenAddress) PaymentSwitchBase(masterSwitch) {
         token = tokenAddress;
@@ -36,7 +37,7 @@ contract PaymentSwitchToken is PaymentSwitchBase
      */
     function placePayment(address seller, PaymentRecord calldata payment) external {
         //amount should have been pre-approved; otherwise will revert 
-        token.transferFrom(seller, address(this), payment.amount);
+        token.transferFrom(msg.sender, address(this), payment.amount);
         
         _onPaymentReceived(seller, payment);
     }

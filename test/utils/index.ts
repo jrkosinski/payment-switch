@@ -144,6 +144,13 @@ export async function getBalanceAsNumber(address: string | Addressable): Promise
     return parseInt((await ethers.provider.getBalance(address)).toString());
 }
 
+export async function getTokenBalanceAsNumber(tokenAddress: string | Addressable, address: string | Addressable): Promise<number> {
+    const token = await ethers.getContractAt("TestToken", tokenAddress);
+    return parseInt(
+        (await token.balanceOf(address)).toString()
+    );
+}
+
 //TODO: comment 
 export function convertPendingBucket(response: any): any {
     const output: { total: number, payments: any[] } = { total: 0, payments: [] };
@@ -190,4 +197,5 @@ export {
     deployMasterSwitch,
     deploySecurityManager, 
     deployContractSizer, 
+    deployTestToken,
 } from "../../scripts/lib/deployment"; 

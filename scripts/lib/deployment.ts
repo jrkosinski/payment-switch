@@ -4,7 +4,8 @@ import {
     ContractSizer,
     PaymentSwitchNative, 
     PaymentSwitchToken,
-    MasterSwitch
+    MasterSwitch,
+    TestToken
 } from "typechain";
 import { Addressable } from "ethers";
 import { defaultFeeBps } from "../constants";
@@ -73,7 +74,7 @@ export async function deployPaymentSwitchToken(
 ): Promise<PaymentSwitchToken> {
     const accounts = await ethers.getSigners();
     const factory: any = (await ethers.getContractFactory(
-        "PaymentSwitchNative",
+        "PaymentSwitchToken",
         accounts[0]
     ));
 
@@ -86,6 +87,19 @@ export async function deployPaymentSwitchToken(
     }
 
     return (await factory.deploy(masterSwitch, tokenAddress)) as any;
+}
+
+export async function deployTestToken(
+    name: string = "Test",
+    symbol: string = "TST"
+): Promise<TestToken> {
+    const accounts = await ethers.getSigners();
+    const factory: any = (await ethers.getContractFactory(
+        "TestToken",
+        accounts[0]
+    ));
+
+    return (await factory.deploy(name, symbol)) as any;
 }
 
 export async function upgradeProxy(

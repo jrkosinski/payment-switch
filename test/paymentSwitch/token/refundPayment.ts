@@ -3,13 +3,14 @@ import { ethers } from "hardhat";
 import {
     getTestAccounts,
     deploySecurityManager,
-    deployPaymentSwitchNative,
-    getBalanceAsNumber,
+    deployPaymentSwitchToken,
+    deployTestToken,
+    getTokenBalanceAsNumber,
     deployMasterSwitch, 
     placePayment,
     createOrderId
 } from "../../utils";
-import { MasterSwitch, PaymentSwitchNative, SecurityManager } from "typechain";
+import { MasterSwitch, PaymentSwitchToken, SecurityManager, TestToken } from "typechain";
 import { applySecurityRoles } from "../../utils/security";
 import * as constants from "../../constants";
 import { IPaymentRecord } from "test/IPaymentRecord";
@@ -17,7 +18,8 @@ import { IPaymentRecord } from "test/IPaymentRecord";
 
 describe("PaymentSwitch Native: Refund Payments", function () {
     let masterSwitch: MasterSwitch;
-    let paymentSwitch: PaymentSwitchNative;
+    let paymentSwitch: PaymentSwitchToken;
+    let token: TestToken;
     let securityManager: SecurityManager;
 
     let addresses: any = {};
@@ -27,21 +29,28 @@ describe("PaymentSwitch Native: Refund Payments", function () {
         addresses = acc.addresses;
         securityManager = await deploySecurityManager(addresses.admin);
         masterSwitch = await deployMasterSwitch(securityManager.target);
-        paymentSwitch = await deployPaymentSwitchNative(masterSwitch.target);
+        token = await deployTestToken();
+        paymentSwitch = await deployPaymentSwitchToken(masterSwitch.target, token.target);
 
         //apply security roles
         await applySecurityRoles(securityManager, addresses);
+
+        //mint token 
+        await Promise.all([
+            token.mintToCaller(800000000),
+            token.mint(addresses.payer, 800000000)
+        ]);
     });
 
     describe("Partial Refund", function () {
         it("make a partial refund of a payment", async function () {
             const orderId: number = createOrderId();
-            const amount: number = 100000000;
+            const amount: number = 10000000;
             const { payer, seller } = addresses;
             let paymentRecord: any = null;
 
             //initial values
-            expect(await getBalanceAsNumber(paymentSwitch.target)).to.equal(0);
+            expect(await getTokenBalanceAsNumber(token.target, paymentSwitch.target)).to.equal(0);
 
             //make sure that no payment record exists already
             paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
@@ -52,7 +61,8 @@ describe("PaymentSwitch Native: Refund Payments", function () {
                 amount, payer, orderId: orderId, refunded: false
             };
 
-            await paymentSwitch.placePayment(addresses.seller, paymentData, { value: amount });
+            await token.approve(paymentSwitch.target.toString(), amount);
+            await paymentSwitch.placePayment(addresses.seller, paymentData);
 
             //check that amount is recorded 
             paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
@@ -62,7 +72,7 @@ describe("PaymentSwitch Native: Refund Payments", function () {
             expect(paymentRecord.refunded).to.equal(false);
 
             //check that ether amount is stored 
-            expect(await getBalanceAsNumber(paymentSwitch.target)).to.equal(amount);
+            expect(await getTokenBalanceAsNumber(token.target, paymentSwitch.target)).to.equal(amount);
             
             //refund a portion of the payment 
             const refundAmount: number = Math.floor(amount *.25);
@@ -83,7 +93,7 @@ describe("PaymentSwitch Native: Refund Payments", function () {
             let paymentRecord: any = null;
 
             //initial values
-            expect(await getBalanceAsNumber(paymentSwitch.target)).to.equal(0);
+            expect(await getTokenBalanceAsNumber(token.target, paymentSwitch.target)).to.equal(0);
 
             //make sure that no payment record exists already
             paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
@@ -94,7 +104,8 @@ describe("PaymentSwitch Native: Refund Payments", function () {
                 amount, payer, orderId: orderId, refunded: false
             };
 
-            await paymentSwitch.placePayment(addresses.seller, paymentData, { value: amount });
+            await token.approve(paymentSwitch.target.toString(), amount);
+            await paymentSwitch.placePayment(addresses.seller, paymentData);
 
             //check that amount is recorded 
             paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
@@ -104,7 +115,7 @@ describe("PaymentSwitch Native: Refund Payments", function () {
             expect(paymentRecord.refunded).to.equal(false);
 
             //check that ether amount is stored 
-            expect(await getBalanceAsNumber(paymentSwitch.target)).to.equal(amount);
+            expect(await getTokenBalanceAsNumber(token.target, paymentSwitch.target)).to.equal(amount);
 
             //refund a portion of the payment 
             const refundAmount: number = amount+1;
@@ -125,7 +136,8 @@ describe("PaymentSwitch Native: Refund Payments", function () {
                 amount, payer, orderId: orderId, refunded: false
             };
 
-            await paymentSwitch.placePayment(seller, paymentData, { value: amount });
+            await token.approve(paymentSwitch.target.toString(), amount);
+            await paymentSwitch.placePayment(seller, paymentData);
 
             //initial values 
             paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
@@ -152,7 +164,7 @@ describe("PaymentSwitch Native: Refund Payments", function () {
             let paymentRecord: any = null;
 
             //initial values
-            expect(await getBalanceAsNumber(paymentSwitch.target)).to.equal(0);
+            expect(await getTokenBalanceAsNumber(token.target, paymentSwitch.target)).to.equal(0);
 
             //make sure that no payment record exists already
             paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
@@ -163,7 +175,8 @@ describe("PaymentSwitch Native: Refund Payments", function () {
                 amount, payer, orderId: orderId, refunded: false
             };
 
-            await paymentSwitch.placePayment(addresses.seller, paymentData, { value: amount });
+            await token.approve(paymentSwitch.target.toString(), amount);
+            await paymentSwitch.placePayment(addresses.seller, paymentData);
 
             //check that amount is recorded 
             paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
@@ -173,7 +186,7 @@ describe("PaymentSwitch Native: Refund Payments", function () {
             expect(paymentRecord.refunded).to.equal(false);
 
             //check that ether amount is stored 
-            expect(await getBalanceAsNumber(paymentSwitch.target)).to.equal(amount);
+            expect(await getTokenBalanceAsNumber(token.target, paymentSwitch.target)).to.equal(amount);
 
             //refund a portion of the payment 
             const refundAmount: number = amount;
@@ -201,7 +214,8 @@ describe("PaymentSwitch Native: Refund Payments", function () {
                 amount, payer, orderId: orderId, refunded: false
             };
 
-            await paymentSwitch.placePayment(seller, paymentData, { value: amount });
+            await token.approve(paymentSwitch.target.toString(), amount);
+            await paymentSwitch.placePayment(seller, paymentData);
 
             //initial values 
             paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());

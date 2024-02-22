@@ -2,21 +2,23 @@ import { expect } from "chai";
 import {
     getTestAccounts,
     deploySecurityManager,
-    deployPaymentSwitchNative, 
-    getBalanceAsNumber,
+    deployPaymentSwitchToken, 
+    getTokenBalanceAsNumber,
     deployMasterSwitch,
+    deployTestToken,
     createOrderId
 } from "../../utils";
-import { MasterSwitch, PaymentSwitchNative, SecurityManager } from "typechain";
+import { MasterSwitch, PaymentSwitchToken, SecurityManager, TestToken } from "typechain";
 import { applySecurityRoles } from "../../utils/security";
 import * as constants from "../../constants";
 import { IPaymentRecord } from "test/IPaymentRecord";
 
 
-describe("PaymentSwitch Native: Place Payments", function () {
+describe("PaymentSwitch Token: Place Payments", function () {
     let masterSwitch: MasterSwitch;
-    let paymentSwitch: PaymentSwitchNative;
+    let paymentSwitch: PaymentSwitchToken;
     let securityManager: SecurityManager;
+    let token: TestToken;
 
     let addresses: any = {};
 
@@ -25,10 +27,17 @@ describe("PaymentSwitch Native: Place Payments", function () {
         addresses = acc.addresses;
         securityManager = await deploySecurityManager(addresses.admin);
         masterSwitch = await deployMasterSwitch(securityManager.target);
-        paymentSwitch = await deployPaymentSwitchNative(masterSwitch.target);
+        token = await deployTestToken();
+        paymentSwitch = await deployPaymentSwitchToken(masterSwitch.target, token.target);
 
         //apply security roles
         await applySecurityRoles(securityManager, addresses);
+
+        //mint token 
+        await Promise.all([
+            token.mintToCaller(800000000),
+            token.mint(addresses.payer, 800000000)
+        ]);
     });
 
     describe("Make Payments", function () {
@@ -39,7 +48,7 @@ describe("PaymentSwitch Native: Place Payments", function () {
             let paymentRecord: any = null;
             
             //initial values
-            expect(await getBalanceAsNumber(paymentSwitch.target)).to.equal(0);
+            expect(await getTokenBalanceAsNumber(token.target, paymentSwitch.target)).to.equal(0);
 
             //make sure that no payment record exists already
             paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
@@ -50,7 +59,8 @@ describe("PaymentSwitch Native: Place Payments", function () {
                 amount, payer, orderId: orderId, refunded: false
             };
             
-            await paymentSwitch.placePayment(addresses.seller, paymentData, { value: amount }); 
+            await token.approve(paymentSwitch.target.toString(), amount);
+            await paymentSwitch.placePayment(addresses.seller, paymentData); 
 
             //check that amount is recorded 
             paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
@@ -60,7 +70,7 @@ describe("PaymentSwitch Native: Place Payments", function () {
             expect(paymentRecord.refunded).to.equal(false);
             
             //check that ether amount is stored 
-            expect(await getBalanceAsNumber(paymentSwitch.target)).to.equal(amount);
+            expect(await getTokenBalanceAsNumber(token.target, paymentSwitch.target)).to.equal(amount);
         });
     });
 });
