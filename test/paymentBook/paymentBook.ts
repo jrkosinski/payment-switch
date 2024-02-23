@@ -185,7 +185,7 @@ describe("PaymentBook: General", function () {
             expect(pendingBucket1.total).to.equal(amount1 + amount2);
             
             //remove payment 1
-            await paymentBook.removePendingPayment(addresses.receiver1, oid1);
+            await paymentBook.removePendingPayment(oid1);
 
             expect(parseInt(await paymentBook.getAmountApproved(addresses.receiver1))).to.equal(0);
             expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(amount2);
@@ -199,7 +199,7 @@ describe("PaymentBook: General", function () {
             expect(pendingBucket2.payments[1].amount).to.equal(amount2);
             
             //remove payment 2
-            await paymentBook.removePendingPayment(addresses.receiver1, oid2);
+            await paymentBook.removePendingPayment(oid2);
 
             expect(parseInt(await paymentBook.getAmountApproved(addresses.receiver1))).to.equal(0);
             expect(parseInt(await paymentBook.getAmountPending(addresses.receiver1))).to.equal(0);

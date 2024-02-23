@@ -28,7 +28,7 @@ contract PaymentBook
     this order is enforced 
     */
     mapping(address => PaymentBucket[]) internal paymentBuckets;  // receiver address => buckets[]
-    mapping(uint256 => BucketLocation) internal orderIdsToBuckets; // order Id => bucket location (where order is found)
+    mapping(uint256 => PaymentAddress) internal orderIdsToBuckets; // order Id => bucket location (where order is found)
     
     //enum 
     uint8 constant STATE_PENDING = 1;       //just added
@@ -47,7 +47,7 @@ contract PaymentBook
         uint8 state;
     }
     
-    struct BucketLocation 
+    struct PaymentAddress 
     {
         address receiver;
         uint256 bucketIndex;
@@ -127,14 +127,14 @@ contract PaymentBook
             }
                 
             //if duplicate, add to the amount 
-            PaymentRecord storage payment = _getPayment(receiver, orderId); 
+            PaymentRecord storage payment = _getPayment(orderId); 
             payment.amount += amount;
         } else {
             //add the new payment record to the pending bucket
             pendingBucket.payments.push(PaymentRecord(orderId, payer, amount, false));
             
             //add the location of the payment for reference
-            BucketLocation memory location; 
+            PaymentAddress memory location; 
             location.receiver = receiver;
             location.bucketIndex = paymentBuckets[receiver].length;
             location.paymentIndex = pendingBucket.payments.length;
@@ -144,11 +144,11 @@ contract PaymentBook
         pendingBucket.total += amount;
     }
     
-    function _removePayment(address receiver, uint256 orderId) internal {
-        BucketLocation memory location = orderIdsToBuckets[orderId]; 
+    function _removePayment(uint256 orderId) internal {
+        PaymentAddress memory location = orderIdsToBuckets[orderId]; 
             
-        if (location.paymentIndex > 0 && location.receiver == receiver) {
-            PaymentBucket storage bucket = paymentBuckets[receiver][location.bucketIndex-1];
+        if (location.paymentIndex > 0) {
+            PaymentBucket storage bucket = paymentBuckets[location.receiver][location.bucketIndex-1];
             PaymentRecord storage payment = bucket.payments[location.paymentIndex-1]; 
             
             //revert if bucket is not pending or ready
@@ -165,7 +165,7 @@ contract PaymentBook
             reviewRecord.refunded = payment.refunded;
             
             //move it to the review bucket
-            PaymentBucket storage reviewBucket = paymentBuckets[receiver][0];
+            PaymentBucket storage reviewBucket = paymentBuckets[location.receiver][0];
             reviewBucket.payments.push(reviewRecord); 
             reviewBucket.total += reviewRecord.amount;
             orderIdsToBuckets[orderId].bucketIndex = 0;
@@ -179,8 +179,8 @@ contract PaymentBook
         }
     }
     
-    function _replacePayment(address receiver, uint256 orderId) internal {
-        BucketLocation memory location = orderIdsToBuckets[orderId]; 
+    function _replacePayment(uint256 orderId) internal pure {
+        //PaymentAddress memory location = orderIdsToBuckets[orderId]; 
             
         //TODO: (HIGH) ensure that payment is in review bucket 
         //TODO: (HIGH) remove from review bucekt 
@@ -215,9 +215,8 @@ contract PaymentBook
         }
     }
     
-    function _getPayment(address receiver, uint256 orderId) internal view returns (PaymentRecord storage) {
-        PaymentBucket storage bucket = _getPendingBucket(receiver);
-        BucketLocation memory location = orderIdsToBuckets[orderId];
+    function _getPayment(uint256 orderId) internal view returns (PaymentRecord storage) {
+        PaymentAddress memory location = orderIdsToBuckets[orderId];
         uint256 index = location.paymentIndex;
         if (index > 0) {
             index -= 1;
@@ -225,24 +224,26 @@ contract PaymentBook
         
         //TODO: if index == 0, it means there's no record; so do something good here
         
+        PaymentBucket storage bucket = paymentBuckets[location.receiver][location.bucketIndex-1];
+        
         return bucket.payments[index];
     }
     
-    function _paymentExists(address receiver, uint256 orderId) internal view returns (bool) {
-        BucketLocation memory location = orderIdsToBuckets[orderId];
-        return location.receiver == receiver && location.bucketIndex > 0; 
+    function _paymentExists(uint256 orderId) internal view returns (bool) {
+        PaymentAddress memory location = orderIdsToBuckets[orderId];
+        return location.bucketIndex > 0; 
     }
     
-    function _pendingPaymentExists(address receiver, uint256 orderId) internal view returns (bool) {
-        BucketLocation memory location = orderIdsToBuckets[orderId];
-        return location.receiver == receiver && location.bucketIndex > 0 && 
-            paymentBuckets[receiver][location.bucketIndex-1].state == STATE_PENDING; 
+    function _pendingPaymentExists(uint256 orderId) internal view returns (bool) {
+        PaymentAddress memory location = orderIdsToBuckets[orderId];
+        return location.bucketIndex > 0 && 
+            paymentBuckets[location.receiver][location.bucketIndex-1].state == STATE_PENDING; 
     }
     
-    function _approvedPaymentExists(address receiver, uint256 orderId) internal view returns (bool) {
-        BucketLocation memory location = orderIdsToBuckets[orderId];
-        return location.receiver == receiver && location.bucketIndex > 0 && 
-            paymentBuckets[receiver][location.bucketIndex-1].state == STATE_APPROVED; 
+    function _approvedPaymentExists(uint256 orderId) internal view returns (bool) {
+        PaymentAddress memory location = orderIdsToBuckets[orderId];
+        return location.bucketIndex > 0 && 
+            paymentBuckets[location.receiver][location.bucketIndex-1].state == STATE_APPROVED; 
     }
     
     function _hasPendingBucket(address receiver) internal view returns (bool) {

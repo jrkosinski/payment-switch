@@ -44,7 +44,7 @@ describe("PaymentSwitch Native: Refund Payments", function () {
             expect(await getBalanceAsNumber(paymentSwitch.target)).to.equal(0);
 
             //make sure that no payment record exists already
-            paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             expect(parseInt(paymentRecord.amount)).to.equal(0);
 
             //place a payment 
@@ -55,7 +55,7 @@ describe("PaymentSwitch Native: Refund Payments", function () {
             await paymentSwitch.placePayment(addresses.seller, paymentData, { value: amount });
 
             //check that amount is recorded 
-            paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             expect(paymentRecord.payer).to.equal(payer);
             expect(parseInt(paymentRecord.amount)).to.equal(amount);
             expect(parseInt(paymentRecord.orderId)).to.equal(orderId);
@@ -66,10 +66,10 @@ describe("PaymentSwitch Native: Refund Payments", function () {
             
             //refund a portion of the payment 
             const refundAmount: number = Math.floor(amount *.25);
-            await paymentSwitch.refundPayment(addresses.seller, orderId, refundAmount);
+            await paymentSwitch.refundPayment(orderId, refundAmount);
             
             //check the payment record now
-            paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             expect(paymentRecord.payer).to.equal(payer);
             expect(parseInt(paymentRecord.orderId)).to.equal(orderId);
             expect(parseInt(paymentRecord.amount)).to.equal(amount - refundAmount);
@@ -86,7 +86,7 @@ describe("PaymentSwitch Native: Refund Payments", function () {
             expect(await getBalanceAsNumber(paymentSwitch.target)).to.equal(0);
 
             //make sure that no payment record exists already
-            paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             expect(parseInt(paymentRecord.amount)).to.equal(0);
 
             //place a payment 
@@ -97,7 +97,7 @@ describe("PaymentSwitch Native: Refund Payments", function () {
             await paymentSwitch.placePayment(addresses.seller, paymentData, { value: amount });
 
             //check that amount is recorded 
-            paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             expect(paymentRecord.payer).to.equal(payer);
             expect(parseInt(paymentRecord.amount)).to.equal(amount);
             expect(parseInt(paymentRecord.orderId)).to.equal(orderId);
@@ -108,7 +108,7 @@ describe("PaymentSwitch Native: Refund Payments", function () {
 
             //refund a portion of the payment 
             const refundAmount: number = amount+1;
-            await expect(paymentSwitch.refundPayment(addresses.seller, orderId, refundAmount)).to.be.reverted;
+            await expect(paymentSwitch.refundPayment(orderId, refundAmount)).to.be.reverted;
         });
 
         it("attempt to partially refund payments that have been approved", async function () {
@@ -118,7 +118,7 @@ describe("PaymentSwitch Native: Refund Payments", function () {
             let paymentRecord: any = null;
 
             //make sure that no payment record exists already
-            paymentRecord = await paymentSwitch.getPendingPayment(seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             expect(parseInt(paymentRecord.amount)).to.equal(0);
 
             const paymentData: IPaymentRecord = {
@@ -128,7 +128,7 @@ describe("PaymentSwitch Native: Refund Payments", function () {
             await paymentSwitch.placePayment(seller, paymentData, { value: amount });
 
             //initial values 
-            paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             expect(parseInt(paymentRecord.orderId)).to.equal(orderId);
             expect(parseInt(paymentRecord.amount)).to.equal(amount);
             expect(parseInt(await paymentSwitch.getAmountApproved(seller))).to.equal(0);
@@ -139,7 +139,7 @@ describe("PaymentSwitch Native: Refund Payments", function () {
 
             //attempt to refund a portion of it 
             const refundAmount: number = Math.floor(amount / 2);
-            await expect(paymentSwitch.refundPayment(addresses.seller, orderId, refundAmount)).to.be.reverted;
+            await expect(paymentSwitch.refundPayment(orderId, refundAmount)).to.be.reverted;
         });
     });
     
@@ -155,7 +155,7 @@ describe("PaymentSwitch Native: Refund Payments", function () {
             expect(await getBalanceAsNumber(paymentSwitch.target)).to.equal(0);
 
             //make sure that no payment record exists already
-            paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment( orderId.toString());
             expect(parseInt(paymentRecord.amount)).to.equal(0);
 
             //place a payment 
@@ -166,7 +166,7 @@ describe("PaymentSwitch Native: Refund Payments", function () {
             await paymentSwitch.placePayment(addresses.seller, paymentData, { value: amount });
 
             //check that amount is recorded 
-            paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             expect(paymentRecord.payer).to.equal(payer);
             expect(parseInt(paymentRecord.amount)).to.equal(amount);
             expect(parseInt(paymentRecord.orderId)).to.equal(orderId);
@@ -177,10 +177,10 @@ describe("PaymentSwitch Native: Refund Payments", function () {
 
             //refund a portion of the payment 
             const refundAmount: number = amount;
-            await paymentSwitch.refundPayment(addresses.seller, orderId, refundAmount);
+            await paymentSwitch.refundPayment(orderId, refundAmount);
 
             //check the payment record now
-            paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             expect(paymentRecord.payer).to.equal(ethers.ZeroAddress);
             expect(parseInt(paymentRecord.orderId)).to.equal(0);
             expect(parseInt(paymentRecord.amount)).to.equal(0);
@@ -194,7 +194,7 @@ describe("PaymentSwitch Native: Refund Payments", function () {
             let paymentRecord: any = null;
 
             //make sure that no payment record exists already
-            paymentRecord = await paymentSwitch.getPendingPayment(seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             expect(parseInt(paymentRecord.amount)).to.equal(0);
 
             const paymentData: IPaymentRecord = {
@@ -204,7 +204,7 @@ describe("PaymentSwitch Native: Refund Payments", function () {
             await paymentSwitch.placePayment(seller, paymentData, { value: amount });
 
             //initial values 
-            paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             expect(parseInt(paymentRecord.orderId)).to.equal(orderId);
             expect(parseInt(paymentRecord.amount)).to.equal(amount);
             expect(parseInt(await paymentSwitch.getAmountApproved(seller))).to.equal(0);
@@ -215,7 +215,7 @@ describe("PaymentSwitch Native: Refund Payments", function () {
 
             //attempt to refund a portion of it 
             const refundAmount: number = amount;
-            await expect(paymentSwitch.refundPayment(addresses.seller, orderId, refundAmount)).to.be.reverted;
+            await expect(paymentSwitch.refundPayment(orderId, refundAmount)).to.be.reverted;
         });
 
         it.skip("approve remaining payments after refunding payments", async function () {

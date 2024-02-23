@@ -51,7 +51,7 @@ describe("PaymentSwitch Token: Place Payments", function () {
             expect(await getTokenBalanceAsNumber(token.target, paymentSwitch.target)).to.equal(0);
 
             //make sure that no payment record exists already
-            paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             expect(parseInt(paymentRecord.amount)).to.equal(0);
              
             //place a payment 
@@ -63,7 +63,7 @@ describe("PaymentSwitch Token: Place Payments", function () {
             await paymentSwitch.placePayment(addresses.seller, paymentData); 
 
             //check that amount is recorded 
-            paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             expect(paymentRecord.payer).to.equal(payer);
             expect(parseInt(paymentRecord.amount)).to.equal(amount);
             expect(parseInt(paymentRecord.orderId)).to.equal(orderId);

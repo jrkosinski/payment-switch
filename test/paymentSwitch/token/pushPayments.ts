@@ -49,7 +49,7 @@ describe("PaymentSwitch Native: Push Payments", function () {
             const { payer, seller } = addresses;
             let paymentRecord: any = null;
 
-            paymentRecord = await paymentSwitch.getPendingPayment(seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             expect(parseInt(paymentRecord.amount)).to.equal(0);
             expect(parseInt(paymentRecord.orderId)).to.equal(0);
 
@@ -62,7 +62,7 @@ describe("PaymentSwitch Native: Push Payments", function () {
             await paymentSwitch.placePayment(seller, paymentData);
 
             //initial values 
-            paymentRecord = await paymentSwitch.getPendingPayment(seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             expect(parseInt(paymentRecord.amount)).to.equal(amount);
             expect(parseInt(paymentRecord.orderId)).to.equal(orderId);
             
@@ -74,7 +74,7 @@ describe("PaymentSwitch Native: Push Payments", function () {
             await paymentSwitch.pendingToReady(seller);
             await paymentSwitch.approvePayments(seller);
 
-            paymentRecord = await paymentSwitch.getPendingPayment(seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             //expect(parseInt(paymentRecord.state)).to.equal(constants.paymentStates.approved);
             
             //TODO: test processing payments separately 

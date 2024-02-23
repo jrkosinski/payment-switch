@@ -171,7 +171,7 @@ describe("Batches: Batches", function () {
                 orderId: 300
             }, { value: amount });
             
-            await paymentSwitch.connect(accounts.system).removePayment(addresses.seller, 200);
+            await paymentSwitch.connect(accounts.system).removePayment(200);
 
             console.log(toPaymentBucket(await paymentSwitch.getPendingPayments(addresses.seller)));
             //console.log(toPaymentBuckets(await paymentSwitch.getApprovedPayments(addresses.seller)));

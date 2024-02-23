@@ -38,7 +38,7 @@ describe("PaymentSwitch Native: Approve Payments", function () {
             let paymentRecord: any = null;
 
             //make sure that no payment record exists already
-            paymentRecord = await paymentSwitch.getPendingPayment(seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             expect(parseInt(paymentRecord.amount)).to.equal(0);
 
             const paymentData: IPaymentRecord = {
@@ -48,7 +48,7 @@ describe("PaymentSwitch Native: Approve Payments", function () {
             await paymentSwitch.placePayment(seller, paymentData, { value: amount });
             
             //initial values 
-            paymentRecord = await paymentSwitch.getPendingPayment(addresses.seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             expect(parseInt(paymentRecord.orderId)).to.equal(orderId);
             expect(parseInt(paymentRecord.amount)).to.equal(amount);
             expect(parseInt(await paymentSwitch.getAmountApproved(seller))).to.equal(0);
@@ -61,7 +61,7 @@ describe("PaymentSwitch Native: Approve Payments", function () {
             //TODO: this call should not fail; debug
             
             //pending record should be gone now
-            paymentRecord = await paymentSwitch.getPendingPayment(seller, orderId.toString());
+            paymentRecord = await paymentSwitch.getPendingPayment(orderId.toString());
             expect(parseInt(paymentRecord.amount)).to.equal(0);
             expect(parseInt(paymentRecord.orderId)).to.equal(0);
             

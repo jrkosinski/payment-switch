@@ -3,7 +3,7 @@ pragma solidity ^0.8.7;
 
 import "./ManagedSecurity.sol"; 
 import "./PaymentBook.sol"; 
-import "./IMasterSwitch.sol";
+import "./interfaces/IMasterSwitch.sol";
 import "./utils/CarefulMath.sol"; 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol"; 
@@ -60,23 +60,21 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
     /**
      * Nullifies a payment by removing it from records (does not refund it) 
      * 
-     * @param receiver Intended receiver of the payment to be removed.
      * @param orderId Identifier of the order for which the payment was placed.
      */
-    function removePayment(address receiver, uint256 orderId) external onlyRole(SYSTEM_ROLE) {
-        _removePayment(receiver, orderId); 
+    function removePayment(uint256 orderId) external onlyRole(SYSTEM_ROLE) {
+        _removePayment(orderId); 
     }
     
     /**
      * Refunds all or part of the original payment. If the payment is fully refunded, then 
      * it will also be removed.
      * 
-     * @param receiver Intended receiver of the payment to be refunded.
      * @param orderId Identifier of the order for which the payment was placed.
      * @param amount The amount to refund, cannot exceed remaining payment amount.
      */
-    function refundPayment(address receiver, uint256 orderId, uint256 amount) external onlyRole(REFUNDER_ROLE) {
-        _refundPayment(receiver, orderId, amount);
+    function refundPayment(uint256 orderId, uint256 amount) external onlyRole(REFUNDER_ROLE) {
+        _refundPayment(orderId, amount);
     }
     
     //TODO: comment 
@@ -137,19 +135,20 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
     /**
      * Gets the specified payment, if it exists
      * 
-     * @param receiver The receiver of the payment. 
      * @param orderId Identifier for the order for which the payment was placed. 
      */
-    function getPendingPayment(address receiver, uint256 orderId) public view returns (PaymentRecord memory) {
+    function getPendingPayment(uint256 orderId) public view returns (PaymentRecord memory) {
         PaymentRecord memory payment;
-        if (_pendingPaymentExists(receiver, orderId)) {
-            payment = _getPayment(receiver, orderId);
+        if (_pendingPaymentExists(orderId)) {
+            payment = _getPayment(orderId);
         }
         return payment;
     }
     
-    function _refundPayment(address receiver, uint256 orderId, uint256 amount) internal nonReentrant {
-        PaymentRecord storage payment = _getPayment(receiver, orderId); 
+    function _refundPayment(uint256 orderId, uint256 amount) internal nonReentrant {
+        PaymentRecord storage payment = _getPayment(orderId); 
+        
+        //TODO: (HIGH) enforce that payment is in the right state (pending or ready)
         
         //throw if order invalid 
         if (payment.payer == address(0)) {
@@ -177,7 +176,7 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
             //remove payment if amount is now 0
             if (payment.amount == 0) {
                 payment.refunded = true;
-                _removePayment(receiver, orderId); 
+                _removePayment(orderId); 
             }
         }
     }
