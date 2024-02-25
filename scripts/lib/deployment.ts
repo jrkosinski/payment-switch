@@ -1,11 +1,12 @@
 import { ethers, upgrades } from "hardhat";
 import {
-    SecurityManager,
+    SecurityContext,
     ContractSizer,
     PaymentSwitchNative, 
     PaymentSwitchToken,
     MasterSwitch,
-    TestToken
+    TestToken,
+    TestPaymentBook
 } from "typechain";
 import { Addressable } from "ethers";
 import { defaultFeeBps } from "../constants";
@@ -21,10 +22,10 @@ export async function deployContractSizer() {
     return (await factory.deploy()) as ContractSizer;
 }
 
-export async function deploySecurityManager(adminAddress: string): Promise<SecurityManager> {
+export async function deploySecurityContext(adminAddress: string): Promise<SecurityContext> {
     const accounts = await ethers.getSigners();
     const factory: any = (await ethers.getContractFactory(
-        "SecurityManager",
+        "SecurityContext",
         accounts[0]
     ));
 
@@ -32,7 +33,7 @@ export async function deploySecurityManager(adminAddress: string): Promise<Secur
 }
 
 export async function deployMasterSwitch(
-    securityManager: Addressable | string,
+    securityContext: Addressable | string,
     vaultAddress: Addressable | string = "",
     feeBps: Number = 0
 ): Promise<MasterSwitch> {
@@ -49,7 +50,16 @@ export async function deployMasterSwitch(
     if (feeBps <= 0)
         feeBps = defaultFeeBps;
 
-    return (await factory.deploy(securityManager, vaultAddress, feeBps)) as any;
+    return (await factory.deploy(securityContext, vaultAddress, feeBps)) as any;
+}
+
+export async function deployTestPaymentBook(): Promise<TestPaymentBook> {
+    const accounts = await ethers.getSigners();
+    const factory: any = (await ethers.getContractFactory(
+        "TestPaymentBook",
+        accounts[0]
+    ));
+    return (await factory.deploy()) as any;
 }
 
 export async function deployPaymentSwitchNative(

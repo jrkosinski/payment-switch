@@ -1,10 +1,10 @@
 import { expect } from "chai";
 import {
     getTestAccounts,
-    deploySecurityManager,
+    deploySecurityContext,
     deployMasterSwitch
 } from "../utils";
-import { MasterSwitch, SecurityManager } from "typechain";
+import { MasterSwitch, SecurityContext } from "typechain";
 import { applySecurityRoles } from "../utils/security";
 import { defaultFeeBps } from "../../scripts/constants";
 import { ethers } from "hardhat";
@@ -12,7 +12,7 @@ import { ethers } from "hardhat";
 
 describe("MasterSwitch: Initial State", function () {
     let master: MasterSwitch;
-    let securityManager: SecurityManager;
+    let securityContext: SecurityContext;
 
     let addresses: any = {};
 
@@ -20,11 +20,11 @@ describe("MasterSwitch: Initial State", function () {
         this.beforeEach(async function () {
             let acc = await getTestAccounts(['admin']);
             addresses = acc.addresses;
-            securityManager = await deploySecurityManager(addresses.admin);
+            securityContext = await deploySecurityContext(addresses.admin);
 
             //apply security roles
-            await applySecurityRoles(securityManager, addresses);
-            master = await deployMasterSwitch(securityManager.target);
+            await applySecurityRoles(securityContext, addresses);
+            master = await deployMasterSwitch(securityContext.target);
         });
 
         it("initial values", async function () {
@@ -37,11 +37,11 @@ describe("MasterSwitch: Initial State", function () {
         this.beforeEach(async function () {
             let acc = await getTestAccounts(['admin', 'vault']);
             addresses = acc.addresses;
-            securityManager = await deploySecurityManager(addresses.admin);
+            securityContext = await deploySecurityContext(addresses.admin);
 
             //apply security roles
-            await applySecurityRoles(securityManager, addresses);
-            master = await deployMasterSwitch(securityManager.target, addresses.vault);
+            await applySecurityRoles(securityContext, addresses);
+            master = await deployMasterSwitch(securityContext.target, addresses.vault);
         });
 
         it("initial values", async function () {

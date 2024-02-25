@@ -2,18 +2,18 @@
 pragma solidity ^0.8.7;
 
 /**
- * @title ISecurityManager 
+ * @title ISecurityContext 
  * 
- * Interface for a contract's associated { SecurityManager } contract, from the point of view of the security-managed 
- * contract (only a small subset of the SecurityManager's methods are needed). 
+ * Interface for a contract's associated { SecurityContext } contract, from the point of view of the security-managed 
+ * contract (only a small subset of the SecurityContext's methods are needed). 
  * 
- * See also { SecurityManager }
+ * See also { SecurityContext }
  * 
  * @author John R. Kosinski
  * LoadPipe 2024
  * All rights reserved. Unauthorized use prohibited.
  */
-interface ISecurityManager  {
+interface ISecurityContext  {
     
     /**
      * Returns `true` if `account` has been granted `role`.

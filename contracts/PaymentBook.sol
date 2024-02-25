@@ -3,50 +3,44 @@ pragma solidity ^0.8.7;
 
 import "hardhat/console.sol";
 
-//TODO: batch for removed payments (while in dispute or processing) 
-//TODO: move removed payment back into a batch 
-
-/**
- * @title PaymentBook 
- * 
- * Encapsulates logic for storing and batching payment information 
- * 
- * @author John R. Kosinski
- * LoadPipe 2024
- * All rights reserved. Unauthorized use prohibited.
- */
-contract PaymentBook
+contract PaymentBook 
 {
-    //TODO: array of buckets. bucket[len-1] is pending, 
-    //bucket [len-2] is ready to approve, and all other buckets are approved
-    
     /*
     mapping is receiver address => an array of payment buckets 
-    the LAST payment bucket is the 'pending' bucket' 
-    second to last is 'ready to approve' 
-    all subsequent ones are approved 
-    this order is enforced 
+    - bucket 0 is STATE_REVIEW
+    - followed by 0-n STATE_PROCESSED buckets
+    - followed by 0-n STATE_APPROVED buckets
+    - followed by 0-1 STATE_READY buckets 
+    - followed by exactly 1 STATE_PENDING bucket 
+    
+    [review][processed]...[approved]...[ready][pending]
     */
     mapping(address => PaymentBucket[]) internal paymentBuckets;  // receiver address => buckets[]
-    mapping(uint256 => PaymentAddress) internal orderIdsToBuckets; // order Id => bucket location (where order is found)
+    mapping(uint256 => PaymentAddress) internal paymentAddresses; // order Id => bucket location (where order is found)
     
-    //enum 
-    uint8 constant STATE_PENDING = 1;       //just added
-    uint8 constant STATE_READY = 2;         //ready to be approved
-    uint8 constant STATE_APPROVED = 3;      //approved, ready to pay out
-    uint8 constant STATE_PROCESSED = 4;     //paid out, finished (end state)
-    uint8 constant STATE_FOR_REVIEW = 5;    //has been removed for admin review
-    
-    //errors
-    error DuplicateEntry();
-    
-    struct PaymentBucket 
+    /* Encapsulates information about a payment (not including the receiver, which is the 
+    mapping key)
+    */
+    struct Payment 
     {
-        uint256 total;
-        PaymentRecord[] payments;
+        uint256 id;
+        address payer;
+        uint256 amount;
+    }
+    
+    /* This is just a Payment struct, with an extra 'state' property tacked on. 
+        It's used for returning to callers for info, and always as 'memory', never 'storage'.
+    */
+    struct PaymentWithState 
+    {
+        uint256 id;
+        address payer;
+        uint256 amount;
         uint8 state;
     }
     
+    /* Identifies the receiver, bucket index, and payment index to locate a paymet by id.
+    */
     struct PaymentAddress 
     {
         address receiver;
@@ -54,233 +48,171 @@ contract PaymentBook
         uint256 paymentIndex;
     }
     
-    struct PaymentRecord 
+    /* Buckets contain payments, and can be pending buckets, ready buckets, approved buckets, etc.
+        There are strict rules regarding what buckets can exist and their state transitions. */
+    struct PaymentBucket 
     {
-        uint256 orderId;
-        address payer;
-        uint256 amount;
-        bool refunded;
+        uint256 total;
+        uint8 state;
+        Payment[] payments;
     }
     
-    function getPendingPayments(address receiver) public view returns (PaymentBucket memory) {
-        if (!_hasPendingBucket(receiver))
-            revert("no pending payments");   //TODO: better revert custom error 
-            
-        return _getPendingBucket(receiver);
-    }
+    uint8 constant STATE_PENDING = 1;       //just added
+    uint8 constant STATE_READY = 2;         //ready to be approved
+    uint8 constant STATE_APPROVED = 3;      //approved, ready to pay out
+    uint8 constant STATE_PROCESSED = 4;     //paid out, finished (end state)
+    uint8 constant STATE_FOR_REVIEW = 5;    //has been removed for admin review
     
-    function getAmountPending(address receiver) public view returns (uint256) {
-        if (_hasPendingBucket(receiver))
-            return _getPendingBucket(receiver).total; 
-        return 0;
-    }
-    
-    function getAmountApproved(address receiver) public view returns (uint256) {
-        PaymentBucket[] storage buckets = paymentBuckets[receiver]; 
-        uint256 total = 0;
+    /**
+     * Returns a PaymentWithState structure retrieved by payment id. If the id is invalid, 
+     * the call is not reverted; an empty structure will be returned instead. 
+     * 
+     * @param id Identifies the payment. 
+     * @return A struct containing info about the payment, or an empty struct if not found.
+     */
+    function getPaymentById(uint256 id) public view returns (PaymentWithState memory) {
+        PaymentWithState memory output; 
         
-        for (uint256 n=buckets.length; n>0; n--) {
-            PaymentBucket storage bucket = buckets[n-1]; 
-            if (bucket.state == STATE_APPROVED) {
-                total += bucket.total;
-            }
-            else if (bucket.state > STATE_APPROVED) {
-                break;
-            }
+        if (_paymentExists(id)) {
+            //get the stored payment indicated 
+            PaymentAddress memory location = paymentAddresses[id]; 
+            PaymentBucket memory bucket = paymentBuckets[location.receiver][location.bucketIndex-1];
+            Payment memory payment = bucket.payments[location.paymentIndex-1];
+            
+            //make a copy with state 
+            output.id = payment.id;
+            output.payer = payment.payer;
+            output.amount = payment.amount;
+            output.state = bucket.state;
         }
         
-        return total;
+        return output;
     }
     
-    //TODO: this function must be private 
-    function _pendingToReady(address receiver) internal {
-        //there must be a pending bucket for this to work
-        if (_hasPendingBucket(receiver)) {
-            
-            //there must not be a ready bucket already, in order for this to work 
-            if (!_hasReadyBucket(receiver)) {
-                _appendBucket(receiver);
-            }
-        }
+    /**
+     * Gets the first bucket found for the given receiver, counting backwards from the end 
+     * of the array, which has the given state.
+     * Example: if APPROVED buckets exist from index 8 through 13 inclusive, this call 
+     * will return the bucket at index 13 if APPROVED is passed as the state parameter. 
+     * 
+     * @param receiver The query pertains to buckets for this receiver only.
+     * @param state The desired bucket state.
+     * 
+     * @return The highest-indexed PaymentBucket for the given receiver that has the given state.
+     */
+    function _getBucketWithState(address receiver, uint8 state) internal view returns (PaymentBucket storage) {
+        return paymentBuckets[receiver][_getBucketIndexWithState(receiver, state)-1];
     }
     
-    function _addPendingPayment(address receiver, uint256 orderId, address payer, uint256 amount) internal {
-        
-        //if no pending bucket exists, add one 
-        if (!_hasPendingBucket(receiver)) {
-            _appendBucket(receiver);
-        }
-        
-        //get the pending (last) bucket 
-        PaymentBucket storage pendingBucket = _getPendingBucket(receiver);
-        
-        //check for duplicate
-        uint256 bucketIndex = orderIdsToBuckets[orderId].bucketIndex;
-        if (bucketIndex > 0) {
-            //if the bucket it's in is not pending, ready, or review, then revert 
-            if (bucketIndex > 2) {
-                //index 1 is review
-                //index 2 would be pending 
-                //index 3 could be ready, or could be approved
-                if (paymentBuckets[receiver][bucketIndex-1].state != STATE_READY) 
-                    revert("Order cannot be added to"); //TODO: better revert error
-            }
-                
-            //if duplicate, add to the amount 
-            PaymentRecord storage payment = _getPayment(orderId); 
-            payment.amount += amount;
-        } else {
-            //add the new payment record to the pending bucket
-            pendingBucket.payments.push(PaymentRecord(orderId, payer, amount, false));
-            
-            //add the location of the payment for reference
-            PaymentAddress memory location; 
-            location.receiver = receiver;
-            location.bucketIndex = paymentBuckets[receiver].length;
-            location.paymentIndex = pendingBucket.payments.length;
-            orderIdsToBuckets[orderId] = location;
-        }
-        
-        pendingBucket.total += amount;
-    }
-    
-    function _removePayment(uint256 orderId) internal {
-        PaymentAddress memory location = orderIdsToBuckets[orderId]; 
-            
-        if (location.paymentIndex > 0) {
-            PaymentBucket storage bucket = paymentBuckets[location.receiver][location.bucketIndex-1];
-            PaymentRecord storage payment = bucket.payments[location.paymentIndex-1]; 
-            
-            //revert if bucket is not pending or ready
-            if (bucket.state != STATE_PENDING && bucket.state != STATE_FOR_REVIEW) 
-                revert("Payment cannot be removed from non-pending, non-review bucket"); //TODO: better revert error
-            
-            //TODO: (HIGH) revert if order id is wrong 
-            
-            //create a copy to move to review 
-            PaymentRecord memory reviewRecord; 
-            reviewRecord.orderId = payment.orderId;
-            reviewRecord.amount = payment.amount; 
-            reviewRecord.payer = payment.payer; 
-            reviewRecord.refunded = payment.refunded;
-            
-            //move it to the review bucket
-            PaymentBucket storage reviewBucket = paymentBuckets[location.receiver][0];
-            reviewBucket.payments.push(reviewRecord); 
-            reviewBucket.total += reviewRecord.amount;
-            orderIdsToBuckets[orderId].bucketIndex = 0;
-            orderIdsToBuckets[orderId].paymentIndex = reviewBucket.payments.length;
-            
-            //remove it from its current bucket
-            payment.orderId = 0;
-            bucket.total -= payment.amount; 
-            payment.amount = 0;
-            payment.payer = address(0);
-        }
-    }
-    
-    function _replacePayment(uint256 orderId) internal pure {
-        //PaymentAddress memory location = orderIdsToBuckets[orderId]; 
-            
-        //TODO: (HIGH) ensure that payment is in review bucket 
-        //TODO: (HIGH) remove from review bucekt 
-        //TODO: (HIGH) copy into current ready bucket 
-    }
-    
-    function _approveReadyBucket(address receiver) internal {
-        if (_hasReadyBucket(receiver)) {
-            //TODO: might want to limit the number of approved buckets to a small number
-            PaymentBucket storage readyBucket = _getReadyBucket(receiver);
-            readyBucket.state = STATE_APPROVED;
-            
-            //push that copy to approved by adding a new bucket on top 
-            _appendBucket(receiver);
-        }
-    }
-    
-    function _processApprovedBuckets(address receiver) internal {
+    /**
+     * Similar to {_getBucketWithState}, but returns the index of the bucket only. 
+     * The index is 1-based, to avoid underflow. 0 is returned if no such bucket exists. 
+     * If 1 is returned, it indicates the 0th index. If 100 is returned, it's index 99, 
+     * and so forth. 
+     * 
+     * @param receiver The query pertains to buckets for this receiver only.
+     * @param state The desired bucket state.
+     * 
+     * @return The 1-based index of the highest-indexed PaymentBucket for the given receiver 
+     * that has the given state.
+     */
+    function _getBucketIndexWithState(address receiver, uint8 state) internal view returns (uint256) {
         PaymentBucket[] storage buckets = paymentBuckets[receiver]; 
         
-        //here, loop through approved buckets until the first processed one is found 
-        if (buckets.length >= 1) {
-            for(uint256 n=buckets.length; n>0; n--) { //avoiding underflow here
-                PaymentBucket storage bucket = buckets[n-1];
+        //if there is > 0 buckets, the 0th one should be for review
+        if (state == STATE_FOR_REVIEW) {
+            if (buckets.length > 0 && buckets[0].state == STATE_FOR_REVIEW) 
+                return 1; 
+        }
+        else {
+            for (uint256 n=buckets.length; n>0; n--) {
                 
-                //TODO: check bucket state & process 
-                if (bucket.state == STATE_APPROVED) {
-                    bucket.state = STATE_PROCESSED;
-                    break;
+                //at the first of the state, return true 
+                if (buckets[n-1].state == state) {
+                    return n; 
                 }
+                    
+                //break at first processed one; there will be no more approved past this
+                if (buckets[n-1].state == STATE_PROCESSED) 
+                    break;
             }
-        }
-    }
-    
-    function _getPayment(uint256 orderId) internal view returns (PaymentRecord storage) {
-        PaymentAddress memory location = orderIdsToBuckets[orderId];
-        uint256 index = location.paymentIndex;
-        if (index > 0) {
-            index -= 1;
-        }
-        
-        //TODO: if index == 0, it means there's no record; so do something good here
-        
-        PaymentBucket storage bucket = paymentBuckets[location.receiver][location.bucketIndex-1];
-        
-        return bucket.payments[index];
-    }
-    
-    function _paymentExists(uint256 orderId) internal view returns (bool) {
-        PaymentAddress memory location = orderIdsToBuckets[orderId];
-        return location.bucketIndex > 0; 
-    }
-    
-    function _pendingPaymentExists(uint256 orderId) internal view returns (bool) {
-        PaymentAddress memory location = orderIdsToBuckets[orderId];
-        return location.bucketIndex > 0 && 
-            paymentBuckets[location.receiver][location.bucketIndex-1].state == STATE_PENDING; 
-    }
-    
-    function _approvedPaymentExists(uint256 orderId) internal view returns (bool) {
-        PaymentAddress memory location = orderIdsToBuckets[orderId];
-        return location.bucketIndex > 0 && 
-            paymentBuckets[location.receiver][location.bucketIndex-1].state == STATE_APPROVED; 
-    }
-    
-    function _hasPendingBucket(address receiver) internal view returns (bool) {
-        return paymentBuckets[receiver].length > 1;
-    }
-    
-    function _hasReadyBucket(address receiver) internal view returns (bool) {
-        PaymentBucket[] storage buckets = paymentBuckets[receiver];
-        return buckets.length > 1 && buckets[buckets.length-2].state == STATE_READY;
-    }
-    
-    function _hasApprovedBucket(address receiver) internal view returns (bool) {
-        PaymentBucket[] storage buckets = paymentBuckets[receiver]; 
-        for (uint256 n=buckets.length; n>0; n--) {
-            
-            //at the first approved, return true 
-            if (buckets[n-1].state == STATE_APPROVED) 
-                return true; 
-                
-            //break at first processed one; there will be no more approved past this
-            if (buckets[n-1].state == STATE_PROCESSED) 
-                break;
         }
         
         //if here, none were found 
-        return false;
+        return 0;
     }
     
-    function _getPendingBucket(address receiver) internal view returns (PaymentBucket storage) {
-        return paymentBuckets[receiver][paymentBuckets[receiver].length-1];
+    /**
+     * Returns true if a payment with the given id exists anywhere, in any bucket for 
+     * any receiver. 
+     * 
+     * @param id The payment id. 
+     * 
+     * @return True if a payment with the given id exists. 
+     */
+    function _paymentExists(uint256 id) internal view returns (bool) {
+        PaymentAddress memory location = paymentAddresses[id]; 
+        return location.receiver != address(0) && location.bucketIndex > 0 && location.paymentIndex > 0;
     }
     
-    function _getReadyBucket(address receiver) internal view returns (PaymentBucket storage) {
-        return paymentBuckets[receiver][paymentBuckets[receiver].length-2];
+    /**
+     * 
+     */
+    function _getPaymentById(uint256 id) internal view returns (Payment storage) {
+        PaymentAddress memory location = paymentAddresses[id]; 
+        return paymentBuckets[location.receiver][location.bucketIndex-1].payments[location.paymentIndex-1]; 
     }
     
-    function _appendBucket(address receiver) internal returns (bool) {
+    /**
+     * Gets the total amount that is indicated as locked up for the given receiver in the 
+     * specified state. 
+     * 
+     * For states in which there's only one bucket (e.g. PENDING state), the function will 
+     * simply return the total listed for that single bucket. If no bucket exists for the 
+     * given state, it will return 0. But for states (APPROVED or PROCESSED) which can have 
+     * multiple buckets, it will loop. 
+     * It should be noted that this can potentially overflow, as the total (uint256) is 
+     * incremented. It's unlikely in real life, but it's technically possible. 
+     * 
+     * In actual use, there should normally be a limited number of APPROVED buckets but the 
+     * number of PROCESSED buckets can just keep growing over time. Therefore, it isn't 
+     * recommended to call this with PROCESSED passed for the state. It can potentially 
+     * do a lot of looping. 
+     * 
+     * @param receiver The receiver for whom to calculate bucket totals.
+     * @param state The state of the buckets to tally.
+     * 
+     * @return The total amount in all buckets of the given state for the given receiver.
+     */
+    function _getTotalInState(address receiver, uint8 state) internal view returns (uint256) {
+        uint256 bucketIndex = _getBucketIndexWithState(receiver, state);
+        if (bucketIndex > 0) {
+            if (state == STATE_FOR_REVIEW || state == STATE_PENDING || state == STATE_READY) {
+                return paymentBuckets[receiver][bucketIndex-1].total;
+            }
+            
+            uint256 total = 0;
+            PaymentBucket[] memory buckets = paymentBuckets[receiver];
+            for (uint256 n=bucketIndex; n>0; n--) {
+                if (buckets[n-1].state != state) 
+                    break;
+                total += buckets[n-1].total;
+            }
+            
+            return total;
+        }
+        
+        return 0;
+    }
+    
+    /**
+     * Appends a new PENDING bucket to the end of the buckets array for the given receiver. 
+     * The current PENDING bucket (before appending a new one) will be converted to a READY bucket.
+     * If a READY bucket already exists, however, then the call will revert. 
+     * 
+     * @param receiver The receiver for whom to add the bucket.
+     */
+    function _appendBucket(address receiver) internal {
         PaymentBucket[] storage buckets = paymentBuckets[receiver]; 
         
         //if no buckets yet, first one is review, second is pending 
@@ -289,18 +221,135 @@ contract PaymentBook
             buckets.push();
             buckets[0].state = STATE_FOR_REVIEW;
             buckets[1].state = STATE_PENDING;
-            return true;
+        }
+        else {
+            //not allowed to have two ready buckets at once
+            if (buckets.length > 2 && buckets[buckets.length-2].state == STATE_READY)
+                revert("no can do"); //TODO: better error 
+                
+            //pending bucket becomes ready bucket; new bucket is pending
+            buckets[buckets.length-1].state = STATE_READY;
+            buckets.push();
+            buckets[buckets.length-1].state = STATE_PENDING;
+        }
+    }
+    
+    //test 3
+    /**
+     * Adds a payment to the given receiver's pending bucket, if no payment with the given id 
+     * exists. 
+     * If a payment with the given id exists, then this payment will be added to that one, 
+     * with some restrictions. 
+     * 
+     * If the existing payment is not in a PENDING, READY, or FOR_REVIEW bucket, the call will 
+     * revert however. You can't modify payments that are APPROVED or PROCESSED. 
+     * 
+     * @param receiver The receiver for whom to add the payment.
+     * @param id Id of the payment to add.
+     * @param payer The address of the payer of the payment. 
+     * @param amount The payment amount. 
+     */
+    function _addPayment(address receiver, uint256 id, address payer, uint256 amount) internal {
+        //if no pending bucket exists, add one 
+        if (_getBucketIndexWithState(receiver, STATE_PENDING) == 0) {
+            _appendBucket(receiver);
         }
         
-        //not allowed to have two ready or two pending buckets at once
-        if (buckets.length > 2 && buckets[buckets.length-3].state <= STATE_READY)
-            return false;
-            
-        //pending bucket becomes ready bucket; new bucket is pending
-        buckets[buckets.length-1].state = STATE_READY;
-        buckets.push();
-        buckets[buckets.length-1].state = STATE_PENDING;
+        //check for duplicate
+        uint256 bucketIndex = paymentAddresses[id].bucketIndex;
+        if (bucketIndex > 0) {
+            //if the bucket it's in is not pending, ready, or review, then revert 
+            uint8 bucketState = paymentBuckets[receiver][bucketIndex].state;
+            if (bucketState != STATE_PENDING && bucketState != STATE_READY && bucketState != STATE_FOR_REVIEW) {
+                revert("Order cannot be added to"); //TODO: better revert error
+            }
+                
+            //if duplicate, add to the amount 
+            Payment storage payment = _getPaymentById(id); 
+            payment.amount += amount;
         
-        return true;
+            //get & add to the bucket total 
+            PaymentBucket storage bucket = paymentBuckets[receiver][bucketIndex-1];
+            bucket.total += amount;
+        } else {
+            //by default, add to the last bucket (the pending bucket)
+            bucketIndex = paymentBuckets[receiver].length; 
+            _addPaymentToBucket(receiver, bucketIndex, id, payer, amount);
+        }
+    }
+    
+    function _removePayment(uint256 id, bool removeLocation) internal returns (Payment memory) {
+        PaymentAddress storage location = paymentAddresses[id]; 
+        Payment memory output;
+        
+        if (location.bucketIndex > 0 && location.paymentIndex > 0) {
+            PaymentBucket storage bucket = paymentBuckets[location.receiver][location.bucketIndex-1];
+            output = bucket.payments[location.paymentIndex-1];
+            
+            //zero out the payment
+            Payment storage payment = paymentBuckets[location.receiver][location.bucketIndex-1].payments[location.paymentIndex-1];
+            uint256 amount = payment.amount;
+            payment.payer = address(0);
+            payment.amount = 0; 
+            payment.id = 0;
+            
+            //subtract the total 
+            bucket.total -= amount;
+            
+            //remove location 
+            if (removeLocation) {
+                location.bucketIndex = 0; 
+                location.paymentIndex = 0;
+                location.receiver = address(0);
+            }
+        }
+        
+        return output;
+    }
+    
+    //TODO: should have restrictions for moving payments 
+    function _movePayment(uint256 id, uint256 destBucketIndex) internal {
+        
+        //TODO: check if source == dest bucket
+        
+        //remove the payment from source bucket
+        PaymentAddress storage location = paymentAddresses[id]; 
+        Payment memory paymentToMove = _removePayment(id, false); 
+        
+        if (paymentToMove.amount > 0 && paymentToMove.id == id) {
+            
+            //add the new record at the destination bucket
+            PaymentBucket storage destBucket = paymentBuckets[location.receiver][destBucketIndex-1]; 
+            destBucket.payments.push(paymentToMove);
+            
+            //move the location
+            location.bucketIndex = destBucketIndex;
+            location.paymentIndex = destBucket.payments.length;
+            
+            //add the total to dest bucket 
+            destBucket.total += paymentToMove.amount;
+        }
+    }
+    
+    function _addPaymentToBucket(
+        address receiver, 
+        uint256 bucketIndex, 
+        uint256 id, 
+        address payer, 
+        uint256 amount
+    ) internal {
+        //add the new payment record to the specified bucket
+        PaymentBucket storage bucket = paymentBuckets[receiver][bucketIndex-1]; 
+        bucket.payments.push(Payment(id, payer, amount));
+            
+        //add the location of the payment for reference
+        PaymentAddress memory location; 
+        location.receiver = receiver;
+        location.bucketIndex = bucketIndex;
+        location.paymentIndex = bucket.payments.length;
+        paymentAddresses[id] = location;
+        
+        //add to bucket total
+        bucket.total += amount;
     }
 }

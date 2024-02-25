@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.7;
 
-import "./ManagedSecurity.sol"; 
+import "./security/HasSecurityContext.sol"; 
 
 /**
  * @title MasterSwitch
@@ -13,7 +13,7 @@ import "./ManagedSecurity.sol";
  * LoadPipe 2024
  * All rights reserved. Unauthorized use prohibited.
  */
-contract MasterSwitch is ManagedSecurity
+contract MasterSwitch is HasSecurityContext
 {
     //how much fee is charged per payment (in bps)
     uint256 public feeBps; 
@@ -36,18 +36,30 @@ contract MasterSwitch is ManagedSecurity
     /**
      * Constructor. 
      * 
-     * @param securityManager Contract which will manage secure access for this contract. 
+     * Emits: 
+     * - {HasSecurityContext-SecurityContextSet}
+     * 
+     * Reverts: 
+     * - {ZeroAddressArgument} if the securityContext address is 0x0. 
+     * 
+     * @param securityContext Contract which will define & manage secure access for this contract. 
      * @param vault Recipient of the extracted fees. 
      * @param _feeBps BPS defining the fee portion of each payment. 
      */
-    constructor(ISecurityManager securityManager, address vault, uint256 _feeBps) {
-        _setSecurityManager(securityManager);
+    constructor(ISecurityContext securityContext, address vault, uint256 _feeBps) {
+        _setSecurityContext(securityContext);
         vaultAddress = vault;
         feeBps = _feeBps;
     }
     
     /**
-     * The DAO is allowed to change the fee portion. 
+     * Sets the fee portion as a number of basis points. 
+     * 
+     * Emits: 
+     * - {MasterSwitch-FeeBpsChanged} 
+     * 
+     * Reverts: 
+     * - 'AccessControl:' if caller is not authorized as DAO_ROLE. 
      * 
      * @param _feeBps BPS defining the fee portion of each payment. 
      */
@@ -59,14 +71,20 @@ contract MasterSwitch is ManagedSecurity
     }
 
     /**
-     * The DAO is allowed to change the address to which fees are sent. 
+     * Sets the address to which fees are sent. 
+     * 
+     * Emits: 
+     * - {MasterSwitch-VaultAddressChanged} 
+     * 
+     * Reverts: 
+     * - 'AccessControl:' if caller is not authorized as DAO_ROLE. 
      * 
      * @param _vaultAddress The new address. 
      */
     function setVaultAddress(address _vaultAddress) public onlyRole(DAO_ROLE) {
         if (_vaultAddress != vaultAddress) {
             vaultAddress = _vaultAddress;
-            emit VaultAddressChanged(_vaultAddress, msg.sender); //TODO: TEST
+            emit VaultAddressChanged(_vaultAddress, msg.sender);
         }
     }
 }

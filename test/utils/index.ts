@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Addressable } from "ethers";
-import { IPaymentRecord } from "../IPaymentRecord";
+import { IPaymentRecord } from "./IPaymentRecord";
 
 /**
  * Verifies that an event was fired and that the values associated with the event are as 
@@ -85,7 +85,7 @@ export async function expectRevert(funcCall: any, revertMessage: string | null =
             let paramsString = "";
             params.forEach((e: string) => {
                 if (paramsString.length)
-                    paramsString += ", ";
+                    paramsString += ", ";   
                 paramsString += e;
             });
             revertMessage += `(${paramsString})`;
@@ -195,7 +195,8 @@ export {
     deployPaymentSwitchNative,
     deployPaymentSwitchToken,
     deployMasterSwitch,
-    deploySecurityManager, 
+    deploySecurityContext, 
     deployContractSizer, 
     deployTestToken,
+    deployTestPaymentBook
 } from "../../scripts/lib/deployment"; 

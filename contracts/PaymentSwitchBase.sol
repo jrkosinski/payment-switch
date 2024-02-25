@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.7;
 
-import "./ManagedSecurity.sol"; 
+import "./security/HasSecurityContext.sol"; 
 import "./PaymentBook.sol"; 
 import "./interfaces/IMasterSwitch.sol";
-import "./utils/CarefulMath.sol"; 
-import "hardhat/console.sol";
+import "./utils/CarefulMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol"; 
+
+//TODO: a way to change master switch address 
+//TODO: a way to retrieve payment that's been unclaimed 
 
 /**
  * @title PaymentSwitchBase
@@ -19,12 +21,13 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  * LoadPipe 2024
  * All rights reserved. Unauthorized use prohibited.
  */
-contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard 
-    //TODO: compose PaymentBook instead of inherit
+contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard 
+    //TODO: consider composing PaymentBook instead of inheriting
 {
     //final approval - amount to pay out to various parties
-    mapping(address => uint256) internal toPayOut; 
+    mapping(address => uint256) internal toPayOut;  // receiver -> amount to pay
     
+    //master switch reference 
     IMasterSwitch public masterSwitch;
     
     //EVENTS 
@@ -39,65 +42,157 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
         bool success
     );
     
-    
     //ERRORS 
     error PaymentAmountMismatch(uint256 amount1, uint256 amount2);
-    error InvalidOrderId(uint256 orderId);
-    error InvalidOrderState(uint256 orderId, uint8 state);
-    error InvalidRefundAmount(uint256 orderId, uint256 amount);
+    error InvalidOrderId(uint256 id);
+    error InvalidOrderState(uint256 id, uint8 state);
+    error InvalidRefundAmount(uint256 id, uint256 amount);
     error PaymentFailed(address receiver);
-    
     
     /**
      * Constructor. 
      * 
+     * Emits: 
+     * - {HasSecurityContext-SecurityContextSet}
+     * 
+     * Reverts: 
+     * - {ZeroAddressArgument} if the securityContext address is 0x0. 
+     * 
      * @param _masterSwitch Address of the master switch contract.
      */
     constructor(IMasterSwitch _masterSwitch) {
-        _setSecurityManager(ISecurityManager(_masterSwitch.securityManager())); 
+        _setSecurityContext(ISecurityContext(_masterSwitch.securityContext())); 
         masterSwitch = _masterSwitch;
     }
     
     /**
-     * Nullifies a payment by removing it from records (does not refund it) 
+     * Removes a payment from its current bucket, and moves it into the designated 
+     * 'for review' bucket. 
      * 
-     * @param orderId Identifier of the order for which the payment was placed.
+     * Emits: 
+     * - //TODO: inherits emits of _removePayment 
+     * 
+     * Reverts: 
+     * - //TODO: inherits reverts of _removePayment 
+     * - 'AccessControl:' if caller is not authorized as APPROVER_ROLE. 
+     * 
+     * @param id Identifier of the payment to move.
      */
-    function removePayment(uint256 orderId) external onlyRole(SYSTEM_ROLE) {
-        _removePayment(orderId); 
+    function moveToReview(uint256 id) external onlyRole(APPROVER_ROLE) {
+        PaymentWithState memory payment = getPaymentById(id); 
+        if (payment.state != STATE_PENDING && payment.state != STATE_READY) {
+            revert InvalidOrderState(id, payment.state); 
+        }
+        
+        _movePayment(id, 1); 
     }
     
     /**
      * Refunds all or part of the original payment. If the payment is fully refunded, then 
      * it will also be removed.
      * 
-     * @param orderId Identifier of the order for which the payment was placed.
+     * Emits: 
+     * - //TODO: inherits emits of _refundPayment 
+     * 
+     * Reverts: 
+     * - //TODO: inherits reverts of _refundPayment 
+     * - 'AccessControl:' if caller is not authorized as REFUNDER_ROLE. 
+     * 
+     * @param id Identifier of the order for which the payment was placed.
      * @param amount The amount to refund, cannot exceed remaining payment amount.
      */
-    function refundPayment(uint256 orderId, uint256 amount) external onlyRole(REFUNDER_ROLE) {
-        _refundPayment(orderId, amount);
+    function refundPayment(uint256 id, uint256 amount) external onlyRole(REFUNDER_ROLE) {
+        _refundPayment(id, amount);
     }
     
-    //TODO: comment 
-    function approveBatch(address[] calldata receivers) external onlyRole(APPROVER_ROLE) {
+    /**
+     * Approves all current payments marked as ready, for the given receiver. 
+     * 
+     * Emits: 
+     * - //TODO: inherits emits of _approveReadyBucket 
+     * 
+     * Reverts: 
+     * - //TODO: inherits reverts of _approveReadyBucket 
+     * - 'AccessControl:' if caller is not authorized as APPROVER_ROLE. 
+     * 
+     * @param receiver The receiver for whom to approve payments. 
+     */
+    function approvePayments(address receiver) public onlyRole(APPROVER_ROLE) {
+        uint256 bucketIndex = _getBucketIndexWithState(receiver, STATE_READY); 
+        if (bucketIndex > 0) {
+            paymentBuckets[receiver][bucketIndex-1].state == STATE_APPROVED;
+        }
+    }
+    
+    /**
+     * Approves all current payments marked as ready, for the given receiver. 
+     * 
+     * Emits: 
+     * - //TODO: inherits emits of _approveReadyBucket 
+     * 
+     * Reverts: 
+     * - //TODO: inherits reverts of _approveReadyBucket 
+     * - 'AccessControl:' if caller is not authorized as APPROVER_ROLE. 
+     * 
+     * @param receivers Array of receivers for whom to approve payments. 
+     */
+    function approvePaymentsBatch(address[] calldata receivers) external onlyRole(APPROVER_ROLE) {
         for(uint256 n=0; n<receivers.length; n++) {
             approvePayments(receivers[n]);
         }
     }
     
-    //TODO: comment 
-    function pendingToReady(address receiver) public onlyRole(APPROVER_ROLE) {
-        _pendingToReady(receiver);
+    /**
+     * Takes all currently pending payments for the given receiver, and moves them to 
+     * a ready bucket. A new empty pending bucket will be added for the given receiver.
+     * 
+     * Emits: 
+     * - //TODO: inherits emits of _pendingToReady 
+     * 
+     * Reverts: 
+     * - //TODO: inherits reverts of _pendingToReady 
+     * - 'AccessControl:' if caller is not authorized as APPROVER_ROLE. 
+     * 
+     * @param receiver Address of receiver for whom to freeze pending payments. 
+     */
+    function freezePending(address receiver) public onlyRole(APPROVER_ROLE) {
+        _appendBucket(receiver);
     }
     
-    //TODO: comment 
-    function approvePayments(address receiver) public onlyRole(APPROVER_ROLE) {
-        _approveReadyBucket(receiver);
+    /**
+     * Takes all currently pending payments for each of the receivers in the given array, 
+     * and moves them to a ready bucket. A new empty pending bucket will be added for each 
+     * of the given receivers.
+     * 
+     * Emits: 
+     * - //TODO: inherits emits of _pendingToReady 
+     * 
+     * Reverts: 
+     * - //TODO: inherits reverts of _pendingToReady 
+     * - 'AccessControl:' if caller is not authorized as APPROVER_ROLE. 
+     * 
+     * @param receivers Array of receivers for whom to approve payments. 
+     */
+    function freezePendingBatch(address[] calldata receivers) external onlyRole(APPROVER_ROLE) {
+        for(uint256 n=0; n<receivers.length; n++) {
+            freezePending(receivers[n]);
+        }
     }
     
-    //TODO: replace with processBatch
-    function processPayments(address receiver) external onlyRole(DAO_ROLE) {
-        uint256 amount = getAmountApproved(receiver);
+    /**
+     * Processes all currently approved payments for the given receiver. 
+     * 
+     * Emits: 
+     * - //TODO: inherits emits of _processApprovedBuckets 
+     * 
+     * Reverts: 
+     * - //TODO: inherits reverts of _processApprovedBuckets 
+     * - 'AccessControl:' if caller is not authorized as DAO_ROLE. 
+     * 
+     * @param receiver Address of receiver for whom to process approved payments. 
+     */
+    function processPayments(address receiver) public onlyRole(DAO_ROLE) {
+        /*uint256 amount = getAmountApproved(receiver);
         
         //break off fee 
         uint256 fee = 0;
@@ -115,10 +210,37 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
         
         //process the payment book 
         _processApprovedBuckets(receiver);
+        */
     }
     
     /**
-     * Causes all due payment to be pushed to the specified receiver. 
+     * Processes all currently approved payments for each of the receivers in the given 
+     * array. 
+     * 
+     * Emits: 
+     * - //TODO: inherits emits of _processApprovedBuckets 
+     * 
+     * Reverts: 
+     * - //TODO: inherits reverts of _processApprovedBuckets 
+     * - 'AccessControl:' if caller is not authorized as DAO_ROLE. 
+     * 
+     * @param receivers Array of receivers for whom to process payments. 
+     */
+    function processPaymentsBatch(address[] calldata receivers) external onlyRole(DAO_ROLE) {
+        for(uint256 n=0; n<receivers.length; n++) {
+            processPayments(receivers[n]);
+        }
+    }
+    
+    /**
+     * Causes all currently due payment to be pushed to the specified receiver. 
+     * 
+     * Emits: 
+     * - {PaymentSent} when the operation succeeds. 
+     * 
+     * Reverts: 
+     * - {PaymentFailed} if the push payment fails. 
+     * - 'AccessControl:' if caller is not authorized as DAO_ROLE. 
      * 
      * @param receiver The receiver of the payments to push. 
      */
@@ -128,25 +250,14 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
     
     /**
      * Pulls all currently due payments to the caller. 
+     * 
+     * //TODO: implement & comment 
      */
     function pullPayment() external  {
-        //TODO: implement 
     }
     
-    /**
-     * Gets the specified payment, if it exists
-     * 
-     * @param orderId Identifier for the order for which the payment was placed. 
-     */
-    function getPendingPayment(uint256 orderId) public view returns (PaymentRecord memory) {
-        PaymentRecord memory payment;
-        if (_pendingPaymentExists(orderId)) {
-            payment = _getPayment(orderId);
-        }
-        return payment;
-    }
-    
-    function _refundPayment(uint256 orderId, uint256 amount) internal nonReentrant {
+    function _refundPayment(uint256 id, uint256 amount) internal nonReentrant {
+        /*
         PaymentAddress memory location = orderIdsToBuckets[orderId];
         
         //throw if order invalid 
@@ -163,7 +274,7 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
         }
         
         //get the payment
-        PaymentRecord storage payment = bucket.payments[0];
+        Payment storage payment = bucket.payments[0];
         
         if (payment.amount > 0) {
             
@@ -189,6 +300,7 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
                 _removePayment(orderId); 
             }
         }
+        */
     }
     
     /**
@@ -222,10 +334,10 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
         return true;
     }
     
-    function _onPaymentReceived(address seller, PaymentRecord calldata payment) internal virtual {
+    function _onPaymentReceived(address seller, Payment calldata payment) internal virtual {
         
         //add payment to book
-        _addPendingPayment(seller, payment.orderId, payment.payer, payment.amount);     
+        _addPayment(seller, payment.id, payment.payer, payment.amount);     
         
         //event 
         emit PaymentPlaced( //TODO: add order id 

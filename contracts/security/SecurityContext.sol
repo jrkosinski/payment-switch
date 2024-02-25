@@ -2,10 +2,10 @@
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "./interfaces/ISecurityManager.sol"; 
+import "../interfaces/ISecurityContext.sol"; 
 
 /**
- * @title SecurityManager 
+ * @title SecurityContext 
  * 
  * A contract which provides AccessControl (role-based security) for one or more other contracts. 
  * 
@@ -20,7 +20,7 @@ import "./interfaces/ISecurityManager.sol";
  * LoadPipe 2024
  * All rights reserved. Unauthorized use prohibited.
  */
-contract SecurityManager is AccessControl, ISecurityManager {
+contract SecurityContext is AccessControl, ISecurityContext {
     bytes32 public constant ADMIN_ROLE = 0x0;
     
     /**
@@ -36,7 +36,7 @@ contract SecurityManager is AccessControl, ISecurityManager {
      * @param role The role to query. 
      * @param account Does this account have the specified role?
      */
-    function hasRole(bytes32 role, address account) public view virtual override(AccessControl, ISecurityManager) returns (bool) {
+    function hasRole(bytes32 role, address account) public view virtual override(AccessControl, ISecurityContext) returns (bool) {
         return super.hasRole(role, account);
     }
     

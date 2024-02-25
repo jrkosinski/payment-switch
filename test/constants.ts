@@ -3,7 +3,7 @@ import { ethers } from "ethers";
 export const roles = {
     admin: "0x0000000000000000000000000000000000000000000000000000000000000000",
     pauser: ethers.keccak256(ethers.toUtf8Bytes("PAUSER_ROLE")),
-    upgrader: ethers.keccak256(ethers.toUtf8Bytes("UPGRADER_ROLE")), 
+    upgrader: ethers.keccak256(ethers.toUtf8Bytes("UPGRADER_ROLE")),
     system: ethers.keccak256(ethers.toUtf8Bytes("SYSTEM_ROLE")),
     approver: ethers.keccak256(ethers.toUtf8Bytes("APPROVER_ROLE")),
     dao: ethers.keccak256(ethers.toUtf8Bytes("DAO_ROLE")),
@@ -29,7 +29,7 @@ export const interfaceIds = {
     IERC20: "0x36372b07",
     IERC20Metadata: "0xa219a025",
     IERC777: "0xe58e113c"
-}; 
+};
 
 export const errorMessages = {
     OWNER_ONLY: "Ownable: caller is not the owner",
@@ -52,4 +52,12 @@ export const errorMessages = {
     NFT_INSTANCE_UNAVAILABLE: (nftAddr: string, tokenId: number) => "NftInstanceUnavailable",
     INSUFFICIENT_PAYMENT: (expected: number, actual: number) => "InsufficientPayment",
     INVALID_ACTION: "InvalidAction",
+}
+
+export const bucketStates = {
+    PENDING: 1,
+    READY: 2,
+    APPROVED: 3,
+    PROCESSED: 4, 
+    REVIEW :5
 }
