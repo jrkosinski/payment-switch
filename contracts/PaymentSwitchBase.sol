@@ -43,6 +43,7 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
     //ERRORS 
     error PaymentAmountMismatch(uint256 amount1, uint256 amount2);
     error InvalidOrderId(uint256 orderId);
+    error InvalidOrderState(uint256 orderId, uint8 state);
     error InvalidRefundAmount(uint256 orderId, uint256 amount);
     error PaymentFailed(address receiver);
     
@@ -146,14 +147,23 @@ contract PaymentSwitchBase is ManagedSecurity, PaymentBook, ReentrancyGuard
     }
     
     function _refundPayment(uint256 orderId, uint256 amount) internal nonReentrant {
-        PaymentRecord storage payment = _getPayment(orderId); 
-        
-        //TODO: (HIGH) enforce that payment is in the right state (pending or ready)
+        PaymentAddress memory location = orderIdsToBuckets[orderId];
         
         //throw if order invalid 
-        if (payment.payer == address(0)) {
+        if (location.bucketIndex < 1 || location.paymentIndex < 1) {
             revert InvalidOrderId(orderId);
         }
+        
+        //get the bucket
+        PaymentBucket storage bucket = paymentBuckets[location.receiver][location.bucketIndex-1];
+        
+        //enforce that payment is in the right state (pending or ready)
+        if (bucket.state != STATE_PENDING && bucket.state != STATE_READY && bucket.state != STATE_FOR_REVIEW) {
+            revert InvalidOrderState(orderId, bucket.state);
+        }
+        
+        //get the payment
+        PaymentRecord storage payment = bucket.payments[0];
         
         if (payment.amount > 0) {
             
