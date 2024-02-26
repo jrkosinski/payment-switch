@@ -93,7 +93,7 @@ describe("PaymentBook: Add Buckets", function () {
          * Attempting to add another ready bucket when one already exists, without approving 
          * the existing one first, will revert. 
         */
-        it.skip("can't add more than one ready bucket", async function() {
+        it("can't add more than one ready bucket", async function() {
             await expectRevert(() => paymentBook.test_stateTransitions_wont_add_multple_pending());
         });
     });

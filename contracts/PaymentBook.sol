@@ -26,6 +26,7 @@ contract PaymentBook
         uint256 id;
         address payer;
         uint256 amount;
+        uint256 refundAmount;
     }
     
     /* This is just a Payment struct, with an extra 'state' property tacked on. 
@@ -36,6 +37,7 @@ contract PaymentBook
         uint256 id;
         address payer;
         uint256 amount;
+        uint256 refundAmount;
         uint8 state;
     }
     
@@ -278,6 +280,15 @@ contract PaymentBook
         }
     }
     
+    function _processApprovedBuckets(address receiver) internal {
+        uint256 startIndex = _getBucketIndexWithState(receiver, STATE_APPROVED); 
+        if (startIndex > 0) {
+            for (uint256 n=startIndex; n>0; n--) {
+                paymentBuckets[receiver][n-1].state = STATE_PROCESSED;
+            }
+        }
+    }
+    
     function _removePayment(uint256 id, bool removeLocation) internal returns (Payment memory) {
         PaymentAddress storage location = paymentAddresses[id]; 
         Payment memory output;
@@ -340,7 +351,7 @@ contract PaymentBook
     ) internal {
         //add the new payment record to the specified bucket
         PaymentBucket storage bucket = paymentBuckets[receiver][bucketIndex-1]; 
-        bucket.payments.push(Payment(id, payer, amount));
+        bucket.payments.push(Payment(id, payer, amount, 0));
             
         //add the location of the payment for reference
         PaymentAddress memory location; 

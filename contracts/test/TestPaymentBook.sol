@@ -152,8 +152,8 @@ contract TestPaymentBook is PaymentBook
         
         appendBucket(receiver);
         appendBucket(receiver);
-        
-        //
+        appendBucket(receiver);
+        appendBucket(receiver);
     }
     
     function test_addPayments_zero_buckets(address payer) external {

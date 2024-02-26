@@ -41,6 +41,10 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
         uint256 amount, 
         bool success
     );
+    event PaymentRefunded (
+        uint256 indexed id,
+        uint256 refundAmount
+    );
     
     //ERRORS 
     error PaymentAmountMismatch(uint256 amount1, uint256 amount2);
@@ -78,7 +82,7 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * 
      * @param id Identifier of the payment to move.
      */
-    function moveToReview(uint256 id) external onlyRole(APPROVER_ROLE) {
+    function reviewPayment(uint256 id) external onlyRole(APPROVER_ROLE) {
         PaymentWithState memory payment = getPaymentById(id); 
         if (payment.state != STATE_PENDING && payment.state != STATE_READY) {
             revert InvalidOrderState(id, payment.state); 
@@ -192,7 +196,7 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * @param receiver Address of receiver for whom to process approved payments. 
      */
     function processPayments(address receiver) public onlyRole(DAO_ROLE) {
-        /*uint256 amount = getAmountApproved(receiver);
+        uint256 amount = _getTotalInState(receiver, STATE_APPROVED);
         
         //break off fee 
         uint256 fee = 0;
@@ -210,7 +214,6 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
         
         //process the payment book 
         _processApprovedBuckets(receiver);
-        */
     }
     
     /**
@@ -256,51 +259,51 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
     function pullPayment() external  {
     }
     
-    function _refundPayment(uint256 id, uint256 amount) internal nonReentrant {
-        /*
-        PaymentAddress memory location = orderIdsToBuckets[orderId];
+    /**
+     * Performs a full or partial refund of the specified payment. This means that the 
+     * amount specified will be subtracted from the payment amount, and credited to the 
+     * payer. 
+     * 
+     * @param id Identifies the payment being fully or partially refunded. 
+     * @param refundAmount The amount to refund; cannot exceed the original or remaining amount 
+     * of the specified payment. If this value is zero, the FULL payment amount will be refunded.
+     */
+    function _refundPayment(uint256 id, uint256 refundAmount) internal nonReentrant {
+        
+        //get the payment to refund
+        PaymentAddress memory location = paymentAddresses[id];
         
         //throw if order invalid 
         if (location.bucketIndex < 1 || location.paymentIndex < 1) {
-            revert InvalidOrderId(orderId);
+            revert InvalidOrderId(id);
         }
         
-        //get the bucket
         PaymentBucket storage bucket = paymentBuckets[location.receiver][location.bucketIndex-1];
         
-        //enforce that payment is in the right state (pending or ready)
-        if (bucket.state != STATE_PENDING && bucket.state != STATE_READY && bucket.state != STATE_FOR_REVIEW) {
-            revert InvalidOrderState(orderId, bucket.state);
+        //throw if bucket state is invalid 
+        if (bucket.state == STATE_APPROVED || bucket.state == STATE_PROCESSED) {
+            revert InvalidOrderState(id, bucket.state);
         }
         
         //get the payment
-        Payment storage payment = bucket.payments[0];
+        Payment storage payment = bucket.payments[location.paymentIndex-1];
         
         if (payment.amount > 0) {
             
             //if no amount passed in, use the whole payment amount 
-            if (amount == 0) 
-                amount = payment.amount;
+            if (refundAmount == 0) 
+                refundAmount = payment.amount;
         
             //refund amount can't be greater than the original payment 
-            if (amount > payment.amount) {
-                revert InvalidRefundAmount(orderId, amount);
+            if (refundAmount > payment.amount) {
+                revert InvalidRefundAmount(id, refundAmount);
             }
 
             //place refund amount into bucket for payer
-            toPayOut[payment.payer] += amount;
-            //toPayOut[receiver] -= amount; //TODO: check for overflow
-            
-            //TODO: decrement payment amount 
-            payment.amount -= amount;
-            
-            //remove payment if amount is now 0
-            if (payment.amount == 0) {
-                payment.refunded = true;
-                _removePayment(orderId); 
-            }
+            payment.refundAmount = refundAmount;
+            payment.amount -= refundAmount;
+            toPayOut[payment.payer] += refundAmount;
         }
-        */
     }
     
     /**
@@ -330,10 +333,20 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
         }
     }
     
+    /**
+     * This must be overridden by derived contracts; returns true unconditionally by default.
+     * It's essentially an abstract function in OO parlance. 
+     */
     function _doSendPayment(address /*receiver*/, uint256 /*amount*/) internal virtual returns (bool) {
         return true;
     }
     
+    /**
+     * This will be called by derived contracts after a payment has been recieved. 
+     * 
+     * @param seller The seller in the payment received. 
+     * @param payment Full payment data. 
+     */
     function _onPaymentReceived(address seller, Payment calldata payment) internal virtual {
         
         //add payment to book
