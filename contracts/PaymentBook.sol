@@ -261,7 +261,7 @@ contract PaymentBook
         uint256 bucketIndex = paymentAddresses[id].bucketIndex;
         if (bucketIndex > 0) {
             //if the bucket it's in is not pending, ready, or review, then revert 
-            uint8 bucketState = paymentBuckets[receiver][bucketIndex].state;
+            uint8 bucketState = paymentBuckets[receiver][bucketIndex-1].state;
             if (bucketState != STATE_PENDING && bucketState != STATE_READY && bucketState != STATE_FOR_REVIEW) {
                 revert("Order cannot be added to"); //TODO: better revert error
             }

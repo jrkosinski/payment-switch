@@ -20,7 +20,7 @@ describe("PaymentBook: Add Payments", function () {
     
     /*
     - add payment to pending bucket 
-    - add nw pending bucket 
+    - add new pending bucket 
     - see payment in ready bucket 
     - approve ready bucket 
     - see payment in approved bucket 
@@ -42,6 +42,22 @@ describe("PaymentBook: Add Payments", function () {
 
     it("can add payment to review bucket", async () => {
         await paymentBook.test_addPayments_can_add_to_review(addresses.buyer);
+    });
+
+    it("can add to existing payment in ready bucket", async () => {
+        await paymentBook.test_addPayments_can_add_to_existing_in_ready(addresses.buyer);
+    });
+
+    it("can add to existing payment in pending bucket", async () => {
+        await paymentBook.test_addPayments_can_add_to_existing_in_pending(addresses.buyer);
+    });
+
+    it("cannot add to existing payment in approved bucket", async () => {
+        await paymentBook.test_addPayments_cannot_add_to_existing_in_approved(addresses.buyer);
+    });
+
+    it("cannot add to existing payment in processed bucket", async () => {
+        await paymentBook.test_addPayments_cannot_add_to_existing_in_processed(addresses.buyer);
     });
     
     //TODO: add $ to existing payments in various buckets 

@@ -327,6 +327,83 @@ contract TestPaymentBook is PaymentBook
         _assert(location3.receiver == receiver, "Payment 3 address receiver is wrong");
     }
     
+    function test_addPayments_can_add_to_existing_in_pending(address payer) external {
+        address receiver = msg.sender;
+        
+        //at start, bucket count is zero 
+        _assert(paymentBuckets[receiver].length == 0, "Buckets not empty");
+        
+        //add the pending bucket 
+        _appendBucket(receiver);
+        
+        PaymentBucket[] storage buckets = paymentBuckets[receiver];
+        
+        //add payments to pending bucket
+        _addPaymentToBucket(receiver, 2, 1, payer, 1000);
+        _addPaymentToBucket(receiver, 2, 2, payer, 2000);
+        _addPaymentToBucket(receiver, 2, 3, payer, 3000);
+        
+        _assert(buckets[1].state == STATE_PENDING, "Bucket state is wrong");
+        _assert(buckets[1].total == 6000, "PENDING Bucket total is wrong");
+        _assert(buckets[1].payments[1].amount == 2000, "Payment amount is wrong");
+        
+        //add to the existing payment 2
+        _addPayment(receiver, 2, payer, 5000); 
+        _assert(buckets[1].payments[1].amount == 7000, "Payment amount is wrong");
+        _addPayment(receiver, 2, payer, 2000); 
+        _assert(buckets[1].payments[1].amount == 9000, "Payment amount is wrong");
+        _assert(buckets[1].total == 13000, "PENDING Bucket total is wrong");
+        
+        //add to the existing payment 3
+        _addPayment(receiver, 3, payer, 5000); 
+        _assert(buckets[1].payments[2].amount == 8000, "Payment amount is wrong");
+        _assert(buckets[1].total == 18000, "PENDING Bucket total is wrong");
+    }
+    
+    function test_addPayments_can_add_to_existing_in_ready(address payer) external {
+        address receiver = msg.sender;
+        
+        //at start, bucket count is zero 
+        _assert(paymentBuckets[receiver].length == 0, "Buckets not empty");
+        
+        //add the pending bucket 
+        _appendBucket(receiver);
+        
+        PaymentBucket[] storage buckets = paymentBuckets[receiver];
+        
+        //add payments to pending bucket
+        _addPaymentToBucket(receiver, 2, 1, payer, 1000);
+        _addPaymentToBucket(receiver, 2, 2, payer, 2000);
+        _addPaymentToBucket(receiver, 2, 3, payer, 3000);
+        
+        //move payments to ready bucket 
+        _appendBucket(receiver); 
+        
+        _assert(buckets[1].state == STATE_READY, "Bucket state is wrong");
+        _assert(buckets[1].total == 6000, "READY Bucket total is wrong");
+        _assert(buckets[1].payments[1].amount == 2000, "Payment amount is wrong");
+        
+        //add to the existing payment 2
+        _addPayment(receiver, 2, payer, 5000); 
+        _assert(buckets[1].payments[1].amount == 7000, "Payment amount is wrong");
+        _addPayment(receiver, 2, payer, 2000); 
+        _assert(buckets[1].payments[1].amount == 9000, "Payment amount is wrong");
+        _assert(buckets[1].total == 13000, "READY Bucket total is wrong");
+        
+        //add to the existing payment 3
+        _addPayment(receiver, 3, payer, 5000); 
+        _assert(buckets[1].payments[2].amount == 8000, "Payment amount is wrong");
+        _assert(buckets[1].total == 18000, "READY Bucket total is wrong");
+    }
+    
+    function test_addPayments_cannot_add_to_existing_in_approved(address payer) external {
+        
+    }
+    
+    function test_addPayments_cannot_add_to_existing_in_processed(address payer) external {
+        
+    }
+    
     
     
     //test 1 addBuckets
@@ -375,7 +452,7 @@ contract TestPaymentBook is PaymentBook
     }
     
     function setBucketState(address receiver, uint256 bucketIndex, uint8 newState) public {
-        paymentBuckets[receiver][bucketIndex].state = newState;
+        paymentBuckets[receiver][bucketIndex-1].state = newState;
     }
     
     function getBucketCount(address receiver) public view returns (uint256) {
