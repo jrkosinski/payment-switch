@@ -1,21 +1,21 @@
 import { expect } from "chai";
 import {
     getTestAccounts,
-    deployTestPaymentBook
+    deployTestPaymentBook_Payments
 } from "../utils";
-import { TestPaymentBook } from "typechain";
+import { TestPaymentBook, TestPaymentBook_Payments } from "typechain";
 import { ethers } from "hardhat";
 
 
 describe("PaymentBook: Add Payments", function () {
-    let paymentBook: TestPaymentBook;
+    let paymentBook: TestPaymentBook_Payments;
 
     let addresses: any = {};
 
     this.beforeEach(async function () {
         let acc = await getTestAccounts(['admin', 'buyer']);
         addresses = acc.addresses;
-        paymentBook = await deployTestPaymentBook();
+        paymentBook = await deployTestPaymentBook_Payments();
     });
     
     /*
@@ -53,11 +53,11 @@ describe("PaymentBook: Add Payments", function () {
     });
 
     it("cannot add to existing payment in approved bucket", async () => {
-        await paymentBook.test_addPayments_cannot_add_to_existing_in_approved(addresses.buyer);
+        await expect(paymentBook.test_addPayments_cannot_add_to_existing_in_approved(addresses.buyer)).to.be.reverted;
     });
 
     it("cannot add to existing payment in processed bucket", async () => {
-        await paymentBook.test_addPayments_cannot_add_to_existing_in_processed(addresses.buyer);
+        await expect(paymentBook.test_addPayments_cannot_add_to_existing_in_processed(addresses.buyer)).to.be.reverted;
     });
     
     //TODO: add $ to existing payments in various buckets 

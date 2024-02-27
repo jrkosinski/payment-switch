@@ -198,5 +198,6 @@ export {
     deploySecurityContext, 
     deployContractSizer, 
     deployTestToken,
-    deployTestPaymentBook
+    deployTestPaymentBook_Buckets,
+    deployTestPaymentBook_Payments
 } from "../../scripts/lib/deployment"; 

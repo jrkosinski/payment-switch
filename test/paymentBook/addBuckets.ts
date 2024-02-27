@@ -2,22 +2,22 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import {
     getTestAccounts,
-    deployTestPaymentBook,
+    deployTestPaymentBook_Buckets,
     expectRevert
 } from "../utils";
-import { TestPaymentBook } from "typechain";
+import { TestPaymentBook_Buckets } from "typechain";
 import { bucketStates } from "../constants";
 
 
 describe("PaymentBook: Add Buckets", function () {
-    let paymentBook: TestPaymentBook;
+    let paymentBook: TestPaymentBook_Buckets;
 
     let addresses: any = {};
 
     this.beforeEach(async function () {
         let acc = await getTestAccounts(['admin']);
         addresses = acc.addresses;
-        paymentBook = await deployTestPaymentBook();
+        paymentBook = await deployTestPaymentBook_Buckets();
     });
     
     /*

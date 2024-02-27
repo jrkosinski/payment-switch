@@ -6,7 +6,9 @@ import {
     PaymentSwitchToken,
     MasterSwitch,
     TestToken,
-    TestPaymentBook
+    TestPaymentBook,
+    TestPaymentBook_Payments,
+    TestPaymentBook_Buckets
 } from "typechain";
 import { Addressable } from "ethers";
 import { defaultFeeBps } from "../constants";
@@ -51,15 +53,6 @@ export async function deployMasterSwitch(
         feeBps = defaultFeeBps;
 
     return (await factory.deploy(securityContext, vaultAddress, feeBps)) as any;
-}
-
-export async function deployTestPaymentBook(): Promise<TestPaymentBook> {
-    const accounts = await ethers.getSigners();
-    const factory: any = (await ethers.getContractFactory(
-        "TestPaymentBook",
-        accounts[0]
-    ));
-    return (await factory.deploy()) as any;
 }
 
 export async function deployPaymentSwitchNative(
@@ -110,6 +103,24 @@ export async function deployTestToken(
     ));
 
     return (await factory.deploy(name, symbol)) as any;
+}
+
+export async function deployTestPaymentBook_Payments(): Promise<TestPaymentBook_Payments> {
+    const accounts = await ethers.getSigners();
+    const factory: any = (await ethers.getContractFactory(
+        "TestPaymentBook_Payments",
+        accounts[0]
+    ));
+    return (await factory.deploy()) as any;
+}
+
+export async function deployTestPaymentBook_Buckets(): Promise<TestPaymentBook_Buckets> {
+    const accounts = await ethers.getSigners();
+    const factory: any = (await ethers.getContractFactory(
+        "TestPaymentBook_Buckets",
+        accounts[0]
+    ));
+    return (await factory.deploy()) as any;
 }
 
 export async function upgradeProxy(

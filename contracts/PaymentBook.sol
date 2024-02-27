@@ -65,6 +65,8 @@ contract PaymentBook
     uint8 constant STATE_PROCESSED = 4;     //paid out, finished (end state)
     uint8 constant STATE_FOR_REVIEW = 5;    //has been removed for admin review
     
+    error InvalidPaymentOperation(uint256 id);
+    
     /**
      * Returns a PaymentWithState structure retrieved by payment id. If the id is invalid, 
      * the call is not reverted; an empty structure will be returned instead. 
@@ -263,7 +265,7 @@ contract PaymentBook
             //if the bucket it's in is not pending, ready, or review, then revert 
             uint8 bucketState = paymentBuckets[receiver][bucketIndex-1].state;
             if (bucketState != STATE_PENDING && bucketState != STATE_READY && bucketState != STATE_FOR_REVIEW) {
-                revert("Order cannot be added to"); //TODO: better revert error
+                revert InvalidPaymentOperation(id); 
             }
                 
             //if duplicate, add to the amount 
@@ -276,7 +278,7 @@ contract PaymentBook
         } else {
             //by default, add to the last bucket (the pending bucket)
             bucketIndex = paymentBuckets[receiver].length; 
-            _addPaymentToBucket(receiver, bucketIndex, id, payer, amount);
+            _addPaymentToBucket(bucketIndex, receiver, id, payer, amount);
         }
     }
     
@@ -343,8 +345,8 @@ contract PaymentBook
     }
     
     function _addPaymentToBucket(
-        address receiver, 
         uint256 bucketIndex, 
+        address receiver, 
         uint256 id, 
         address payer, 
         uint256 amount
