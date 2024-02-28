@@ -6,7 +6,7 @@ import "hardhat/console.sol";
 
 contract TestPaymentBook_Payments is TestPaymentBook
 {
-    function test_addPayments_zero_buckets(address payer) external {
+    function test_zero_buckets(address payer) external {
         address receiver = msg.sender;
         
         //at start, bucket count is zero 
@@ -18,7 +18,7 @@ contract TestPaymentBook_Payments is TestPaymentBook
         //bucket count should now be 2: [RV][P]
         PaymentBucket[] memory buckets = paymentBuckets[receiver];
         _assert(buckets.length == 2, "Bucket length should be 2");
-        _assert(buckets[0].state == STATE_FOR_REVIEW, "First bucket should be FOR_REVIEW");
+        _assert(buckets[0].state == STATE_REVIEW, "First bucket should be FOR_REVIEW");
         _assert(buckets[1].state == STATE_PENDING, "Should be PENDING bucket");
         _assert(buckets[0].payments.length == 0, "FOR_REVIEW Bucket should have no payment");
         _assert(buckets[1].payments.length == 1, "PENDING Bucket should have one payment");
@@ -34,7 +34,7 @@ contract TestPaymentBook_Payments is TestPaymentBook
         _assert(location.receiver == receiver, "Payment address receiver is wrong");
     }
     
-    function test_addPayments_pending_bucket(address payer) external {
+    function test_pending_bucket(address payer) external {
         address receiver = msg.sender;
         
         //at start, bucket count is zero 
@@ -46,7 +46,7 @@ contract TestPaymentBook_Payments is TestPaymentBook
         //bucket count should now be 2: [RV][P]
         PaymentBucket[] memory buckets = paymentBuckets[receiver];
         _assert(buckets.length == 2, "Bucket length should be 2");
-        _assert(buckets[0].state == STATE_FOR_REVIEW, "First bucket should be FOR_REVIEW");
+        _assert(buckets[0].state == STATE_REVIEW, "First bucket should be FOR_REVIEW");
         _assert(buckets[1].state == STATE_PENDING, "Should be PENDING bucket");
         _assert(buckets[0].payments.length == 0, "FOR_REVIEW Bucket should have no payment");
         _assert(buckets[1].payments.length == 3, "PENDING Bucket should have three payments");
@@ -87,7 +87,7 @@ contract TestPaymentBook_Payments is TestPaymentBook
         _assert(location3.receiver == receiver, "Payment 3 address receiver is wrong");
     }
     
-    function test_addPayments_can_add_to_ready(address payer) external {
+    function test_can_add_to_ready(address payer) external {
         address receiver = msg.sender;
         
         //at start, bucket count is zero 
@@ -129,7 +129,7 @@ contract TestPaymentBook_Payments is TestPaymentBook
         _assert(location3.receiver == receiver, "Payment 3 address receiver is wrong");
     }
     
-    function test_addPayments_can_add_to_review(address payer) external {
+    function test_can_add_to_review(address payer) external {
         address receiver = msg.sender;
         
         //at start, bucket count is zero 
@@ -171,7 +171,7 @@ contract TestPaymentBook_Payments is TestPaymentBook
         _assert(location3.receiver == receiver, "Payment 3 address receiver is wrong");
     }
     
-    function test_addPayments_can_add_to_existing_in_pending(address payer) external {
+    function test_can_add_to_existing_in_pending(address payer) external {
         address receiver = msg.sender;
         
         //at start, bucket count is zero 
@@ -202,7 +202,7 @@ contract TestPaymentBook_Payments is TestPaymentBook
         _assert(buckets[1].total == 18000, "PENDING Bucket total is wrong");
     }
     
-    function test_addPayments_can_add_to_existing_in_ready(address payer) external {
+    function test_can_add_to_existing_in_ready(address payer) external {
         address receiver = msg.sender;
         
         //at start, bucket count is zero 
@@ -236,7 +236,7 @@ contract TestPaymentBook_Payments is TestPaymentBook
         _assert(buckets[1].total == 18000, "READY Bucket total is wrong");
     }
     
-    function test_addPayments_cannot_add_to_existing_in_approved(address payer) external {
+    function test_cannot_add_to_existing_in_approved(address payer) external {
         address receiver = msg.sender;
         
         //at start, bucket count is zero 
@@ -259,7 +259,7 @@ contract TestPaymentBook_Payments is TestPaymentBook
         _addPayment(receiver, 1, payer, 5000); 
     }
     
-    function test_addPayments_cannot_add_to_existing_in_processed(address payer) external {
+    function test_cannot_add_to_existing_in_processed(address payer) external {
         address receiver = msg.sender;
         
         //at start, bucket count is zero 

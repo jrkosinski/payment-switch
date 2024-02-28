@@ -29,35 +29,35 @@ describe("PaymentBook: Add Payments", function () {
     */
    
     it("adding payment causes automatic adding of buckets, when bucket count is zero", async () => {
-        await paymentBook.test_addPayments_zero_buckets(addresses.buyer);
+        await paymentBook.test_zero_buckets(addresses.buyer);
     });
 
     it("can add payment to pending bucket", async () => {
-        await paymentBook.test_addPayments_pending_bucket(addresses.buyer);
+        await paymentBook.test_pending_bucket(addresses.buyer);
     });
 
     it("can add payment to ready bucket", async () => {
-        await paymentBook.test_addPayments_can_add_to_ready(addresses.buyer);
+        await paymentBook.test_can_add_to_ready(addresses.buyer);
     });
 
     it("can add payment to review bucket", async () => {
-        await paymentBook.test_addPayments_can_add_to_review(addresses.buyer);
+        await paymentBook.test_can_add_to_review(addresses.buyer);
     });
 
     it("can add to existing payment in ready bucket", async () => {
-        await paymentBook.test_addPayments_can_add_to_existing_in_ready(addresses.buyer);
+        await paymentBook.test_can_add_to_existing_in_ready(addresses.buyer);
     });
 
     it("can add to existing payment in pending bucket", async () => {
-        await paymentBook.test_addPayments_can_add_to_existing_in_pending(addresses.buyer);
+        await paymentBook.test_can_add_to_existing_in_pending(addresses.buyer);
     });
 
     it("cannot add to existing payment in approved bucket", async () => {
-        await expect(paymentBook.test_addPayments_cannot_add_to_existing_in_approved(addresses.buyer)).to.be.reverted;
+        await expect(paymentBook.test_cannot_add_to_existing_in_approved(addresses.buyer)).to.be.reverted;
     });
 
     it("cannot add to existing payment in processed bucket", async () => {
-        await expect(paymentBook.test_addPayments_cannot_add_to_existing_in_processed(addresses.buyer)).to.be.reverted;
+        await expect(paymentBook.test_cannot_add_to_existing_in_processed(addresses.buyer)).to.be.reverted;
     });
     
     //TODO: add $ to existing payments in various buckets 

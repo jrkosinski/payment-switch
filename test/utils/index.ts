@@ -199,5 +199,6 @@ export {
     deployContractSizer, 
     deployTestToken,
     deployTestPaymentBook_Buckets,
-    deployTestPaymentBook_Payments
+    deployTestPaymentBook_Payments,
+    deployTestPaymentBook_Move
 } from "../../scripts/lib/deployment"; 

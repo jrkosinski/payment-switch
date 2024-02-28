@@ -94,7 +94,7 @@ describe("PaymentBook: Add Buckets", function () {
          * the existing one first, will revert. 
         */
         it("can't add more than one ready bucket", async function() {
-            await expectRevert(() => paymentBook.test_stateTransitions_wont_add_multple_pending());
+            await expectRevert(() => paymentBook.test_wont_add_multple_pending());
         });
     });
 });

@@ -123,6 +123,15 @@ export async function deployTestPaymentBook_Buckets(): Promise<TestPaymentBook_B
     return (await factory.deploy()) as any;
 }
 
+export async function deployTestPaymentBook_Move(): Promise<TestPaymentBook_Move> {
+    const accounts = await ethers.getSigners();
+    const factory: any = (await ethers.getContractFactory(
+        "TestPaymentBook_Move",
+        accounts[0]
+    ));
+    return (await factory.deploy()) as any;
+}
+
 export async function upgradeProxy(
     address: string | Addressable, 
     newContractName: string) 

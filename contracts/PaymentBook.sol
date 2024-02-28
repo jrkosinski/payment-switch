@@ -63,7 +63,7 @@ contract PaymentBook
     uint8 constant STATE_READY = 2;         //ready to be approved
     uint8 constant STATE_APPROVED = 3;      //approved, ready to pay out
     uint8 constant STATE_PROCESSED = 4;     //paid out, finished (end state)
-    uint8 constant STATE_FOR_REVIEW = 5;    //has been removed for admin review
+    uint8 constant STATE_REVIEW = 5;    //has been removed for admin review
     
     error InvalidPaymentOperation(uint256 id);
     
@@ -124,8 +124,8 @@ contract PaymentBook
         PaymentBucket[] storage buckets = paymentBuckets[receiver]; 
         
         //if there is > 0 buckets, the 0th one should be for review
-        if (state == STATE_FOR_REVIEW) {
-            if (buckets.length > 0 && buckets[0].state == STATE_FOR_REVIEW) 
+        if (state == STATE_REVIEW) {
+            if (buckets.length > 0 && buckets[0].state == STATE_REVIEW) 
                 return 1; 
         }
         else {
@@ -191,7 +191,7 @@ contract PaymentBook
     function _getTotalInState(address receiver, uint8 state) internal view returns (uint256) {
         uint256 bucketIndex = _getBucketIndexWithState(receiver, state);
         if (bucketIndex > 0) {
-            if (state == STATE_FOR_REVIEW || state == STATE_PENDING || state == STATE_READY) {
+            if (state == STATE_REVIEW || state == STATE_PENDING || state == STATE_READY) {
                 return paymentBuckets[receiver][bucketIndex-1].total;
             }
             
@@ -223,7 +223,7 @@ contract PaymentBook
         if (buckets.length == 0) {
             buckets.push();
             buckets.push();
-            buckets[0].state = STATE_FOR_REVIEW;
+            buckets[0].state = STATE_REVIEW;
             buckets[1].state = STATE_PENDING;
         }
         else {
@@ -264,7 +264,7 @@ contract PaymentBook
         if (bucketIndex > 0) {
             //if the bucket it's in is not pending, ready, or review, then revert 
             uint8 bucketState = paymentBuckets[receiver][bucketIndex-1].state;
-            if (bucketState != STATE_PENDING && bucketState != STATE_READY && bucketState != STATE_FOR_REVIEW) {
+            if (bucketState != STATE_PENDING && bucketState != STATE_READY && bucketState != STATE_REVIEW) {
                 revert InvalidPaymentOperation(id); 
             }
                 

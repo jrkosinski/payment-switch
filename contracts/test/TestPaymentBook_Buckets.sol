@@ -19,7 +19,7 @@ contract TestPaymentBook_Buckets is TestPaymentBook
         _assert(paymentBuckets[receiver].length == 2, "Bucket count after test != 1");
         
         //review bucket
-        _assert(paymentBuckets[receiver][0].state == STATE_FOR_REVIEW, "New bucket state != STATE_FOR_REVIEW");
+        _assert(paymentBuckets[receiver][0].state == STATE_REVIEW, "New bucket state != STATE_REVIEW");
         _assert(paymentBuckets[receiver][0].total == 0, "Review bucket total != 0");
         _assert(paymentBuckets[receiver][0].payments.length == 0, "Review bucket payments.length != 0");
         
@@ -31,7 +31,7 @@ contract TestPaymentBook_Buckets is TestPaymentBook
         _assert(_getBucketIndexWithState(receiver, STATE_APPROVED) == 0, "getBucketIndexWithState(receiver, STATE_APPROVED) != 0");
         _assert(_getBucketIndexWithState(receiver, STATE_PROCESSED) == 0, "getBucketIndexWithState(receiver, STATE_PROCESSED) != 0");
         _assert(_getBucketIndexWithState(receiver, STATE_READY) == 0, "getBucketIndexWithState(receiver, STATE_READY) != 0");
-        _assert(_getBucketIndexWithState(receiver, STATE_FOR_REVIEW) == 1, "getBucketIndexWithState(receiver, STATE_FOR_REVIEW) != 1");
+        _assert(_getBucketIndexWithState(receiver, STATE_REVIEW) == 1, "getBucketIndexWithState(receiver, STATE_REVIEW) != 1");
         _assert(_getBucketIndexWithState(receiver, STATE_PENDING) == 2, "getBucketIndexWithState(receiver, STATE_PENDING) != 2");
         
         _assert(paymentBuckets[receiver].length == 2, "Bucket length should be 2");
@@ -52,7 +52,7 @@ contract TestPaymentBook_Buckets is TestPaymentBook
         
         _assert(_getBucketIndexWithState(receiver, STATE_APPROVED) == 0, "getBucketIndexWithState(receiver, STATE_APPROVED) != 0");
         _assert(_getBucketIndexWithState(receiver, STATE_PROCESSED) == 0, "getBucketIndexWithState(receiver, STATE_PROCESSED) != 0");
-        _assert(_getBucketIndexWithState(receiver, STATE_FOR_REVIEW) == 1, "getBucketIndexWithState(receiver, STATE_FOR_REVIEW) != 1");
+        _assert(_getBucketIndexWithState(receiver, STATE_REVIEW) == 1, "getBucketIndexWithState(receiver, STATE_REVIEW) != 1");
         _assert(_getBucketIndexWithState(receiver, STATE_READY) == 2, "getBucketIndexWithState(receiver, STATE_READY) != 2");
         _assert(_getBucketIndexWithState(receiver, STATE_PENDING) == 3, "getBucketIndexWithState(receiver, STATE_PENDING) != 3");
         
@@ -74,7 +74,7 @@ contract TestPaymentBook_Buckets is TestPaymentBook
         
         _assert(_getBucketIndexWithState(receiver, STATE_APPROVED) == 0, "getBucketIndexWithState(receiver, STATE_APPROVED) != 0");
         _assert(_getBucketIndexWithState(receiver, STATE_PROCESSED) == 0, "getBucketIndexWithState(receiver, STATE_PROCESSED) != 0");
-        _assert(_getBucketIndexWithState(receiver, STATE_FOR_REVIEW) == 1, "getBucketIndexWithState(receiver, STATE_FOR_REVIEW) != 1");
+        _assert(_getBucketIndexWithState(receiver, STATE_REVIEW) == 1, "getBucketIndexWithState(receiver, STATE_REVIEW) != 1");
         _assert(_getBucketIndexWithState(receiver, STATE_READY) == 2, "getBucketIndexWithState(receiver, STATE_READY) != 2");
         _assert(_getBucketIndexWithState(receiver, STATE_PENDING) == 3, "getBucketIndexWithState(receiver, STATE_PENDING) != 3");
         
@@ -83,7 +83,7 @@ contract TestPaymentBook_Buckets is TestPaymentBook
         
         _assert(_getBucketIndexWithState(receiver, STATE_APPROVED) == 2, "getBucketIndexWithState(receiver, STATE_APPROVED) != 2");
         _assert(_getBucketIndexWithState(receiver, STATE_PROCESSED) == 0, "getBucketIndexWithState(receiver, STATE_PROCESSED) != 0");
-        _assert(_getBucketIndexWithState(receiver, STATE_FOR_REVIEW) == 1, "getBucketIndexWithState(receiver, STATE_FOR_REVIEW) != 1");
+        _assert(_getBucketIndexWithState(receiver, STATE_REVIEW) == 1, "getBucketIndexWithState(receiver, STATE_REVIEW) != 1");
         _assert(_getBucketIndexWithState(receiver, STATE_READY) == 0, "getBucketIndexWithState(receiver, STATE_READY) != 2");
         _assert(_getBucketIndexWithState(receiver, STATE_PENDING) == 3, "getBucketIndexWithState(receiver, STATE_PENDING) != 3");
         
@@ -92,11 +92,11 @@ contract TestPaymentBook_Buckets is TestPaymentBook
         
         _assert(_getBucketIndexWithState(receiver, STATE_APPROVED) == 2, "getBucketIndexWithState(receiver, STATE_APPROVED) != 2");
         _assert(_getBucketIndexWithState(receiver, STATE_PROCESSED) == 0, "getBucketIndexWithState(receiver, STATE_PROCESSED) != 0");
-        _assert(_getBucketIndexWithState(receiver, STATE_FOR_REVIEW) == 1, "getBucketIndexWithState(receiver, STATE_FOR_REVIEW) != 1");
+        _assert(_getBucketIndexWithState(receiver, STATE_REVIEW) == 1, "getBucketIndexWithState(receiver, STATE_REVIEW) != 1");
         _assert(_getBucketIndexWithState(receiver, STATE_READY) == 3, "getBucketIndexWithState(receiver, STATE_READY) != 3");
         _assert(_getBucketIndexWithState(receiver, STATE_PENDING) == 4, "getBucketIndexWithState(receiver, STATE_PENDING) != 4");
         
-        _assert(paymentBuckets[receiver][0].state == STATE_FOR_REVIEW, "Bucket 0 state should be STATE_FOR_REVIEW");
+        _assert(paymentBuckets[receiver][0].state == STATE_REVIEW, "Bucket 0 state should be STATE_REVIEW");
         _assert(paymentBuckets[receiver][1].state == STATE_APPROVED, "Bucket 1 state should be STATE_APPROVED");
         _assert(paymentBuckets[receiver][2].state == STATE_READY, "Bucket 2 state should be STATE_READY");
         _assert(paymentBuckets[receiver][3].state == STATE_PENDING, "Bucket 3 state should be STATE_PENDING");
@@ -130,11 +130,11 @@ contract TestPaymentBook_Buckets is TestPaymentBook
         
         _assert(_getBucketIndexWithState(receiver, STATE_APPROVED) == 3, "getBucketIndexWithState(receiver, STATE_APPROVED) != 2");
         _assert(_getBucketIndexWithState(receiver, STATE_PROCESSED) == 0, "getBucketIndexWithState(receiver, STATE_PROCESSED) != 0");
-        _assert(_getBucketIndexWithState(receiver, STATE_FOR_REVIEW) == 1, "getBucketIndexWithState(receiver, STATE_FOR_REVIEW) != 1");
+        _assert(_getBucketIndexWithState(receiver, STATE_REVIEW) == 1, "getBucketIndexWithState(receiver, STATE_REVIEW) != 1");
         _assert(_getBucketIndexWithState(receiver, STATE_READY) == 4, "getBucketIndexWithState(receiver, STATE_READY) != 3");
         _assert(_getBucketIndexWithState(receiver, STATE_PENDING) == 5, "getBucketIndexWithState(receiver, STATE_PENDING) != 4");
         
-        _assert(paymentBuckets[receiver][0].state == STATE_FOR_REVIEW, "Bucket 0 state should be STATE_FOR_REVIEW");
+        _assert(paymentBuckets[receiver][0].state == STATE_REVIEW, "Bucket 0 state should be STATE_REVIEW");
         _assert(paymentBuckets[receiver][1].state == STATE_APPROVED, "Bucket 1 state should be STATE_APPROVED");
         _assert(paymentBuckets[receiver][2].state == STATE_APPROVED, "Bucket 2 state should be STATE_APPROVED");
         _assert(paymentBuckets[receiver][3].state == STATE_READY, "Bucket 3 state should be STATE_READY");
@@ -146,7 +146,7 @@ contract TestPaymentBook_Buckets is TestPaymentBook
     /**
      * Will revert, because we're trying to add a new bucket to [RV][A][R][P]
      */
-    function test_stateTransitions_wont_add_multple_pending() external {
+    function test_wont_add_multple_pending() external {
         address receiver = msg.sender;
         
         _appendBucket(receiver);
