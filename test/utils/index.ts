@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Addressable } from "ethers";
-import { IPaymentRecord } from "./IPaymentRecord";
+import { IPayment } from "./IPayment";
 
 /**
  * Verifies that an event was fired and that the values associated with the event are as 
@@ -182,7 +182,7 @@ export async function placePayment(paymentSwitch: any,
         orderId = createOrderId();
     }
     
-    const paymentData: IPaymentRecord = {
+    const paymentData: IPayment = {
         amount, payer: buyerAddr, orderId: orderId, refunded: false
     };
 

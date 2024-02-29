@@ -7,6 +7,7 @@ import "hardhat/console.sol";
 contract TestPaymentBook_Move is TestPaymentBook
 {
     /**
+     * Add and then remove a payment from pending bucket. 
      */
     function test_can_remove_payment_from_pending(address payer) external {
         address receiver = msg.sender;
@@ -23,7 +24,7 @@ contract TestPaymentBook_Move is TestPaymentBook
         //get the pending bucket 
         PaymentBucket storage pendingBucket = _getBucketWithState(receiver, STATE_PENDING);
         _assert(pendingBucket.payments.length == 3, "Payment count is wrong"); 
-        _assert(_paymentExists(2) == true, "Payment should exist");
+        _assert(paymentExists(2) == true, "Payment should exist");
         _assert(pendingBucket.payments.length == 3, "Payment count is wrong"); 
         _assert(pendingBucket.payments[1].id == 2, "Id is wrong");
         _assert(pendingBucket.payments[1].payer == payer, "Payer is wrong");
@@ -34,7 +35,7 @@ contract TestPaymentBook_Move is TestPaymentBook
         _removePayment(2, true); 
         
         //test that location has been erased 
-        _assert(_paymentExists(2) == false, "Payment should be gone from location");
+        _assert(paymentExists(2) == false, "Payment should be gone from location");
         
         //payment data should be zeroed out, but array length should be the same 
         _assert(pendingBucket.payments.length == 3, "Payment count is wrong"); 
@@ -44,6 +45,9 @@ contract TestPaymentBook_Move is TestPaymentBook
         _assert(pendingBucket.total == 4000, "Bucket total is wrong");
     }
     
+    /**
+     * Add a payment, move it to review, then remove it. 
+     */
     function test_can_remove_payment_from_review(address payer) external {
         address receiver = msg.sender;
         
@@ -59,7 +63,7 @@ contract TestPaymentBook_Move is TestPaymentBook
         //get the pending bucket 
         PaymentBucket storage pendingBucket = _getBucketWithState(receiver, STATE_PENDING);
         _assert(pendingBucket.payments.length == 3, "Payment count is wrong"); 
-        _assert(_paymentExists(2) == true, "Payment should exist");
+        _assert(paymentExists(2) == true, "Payment should exist");
         _assert(pendingBucket.payments.length == 3, "Payment count is wrong"); 
         _assert(pendingBucket.payments[1].id == 2, "Id is wrong");
         _assert(pendingBucket.payments[1].payer == payer, "Payer is wrong");
@@ -72,8 +76,16 @@ contract TestPaymentBook_Move is TestPaymentBook
         
         //make sure that payment is now in review 
         _assert(paymentAddresses[2].bucketIndex == 1, "Payment should be in review bucket");
+        _assert(reviewBucket.payments.length == 1, "Payment count is wrong"); 
+        _assert(reviewBucket.payments[0].id == 2, "Id is wrong");
+        _assert(reviewBucket.payments[0].payer == payer, "Payer is wrong");
+        _assert(reviewBucket.payments[0].amount == 2000, "Amount is wrong");
+        _assert(reviewBucket.total == 2000, "Bucket total is wrong");
     }
     
+    /**
+     * Add a payment to pending bucket, then move it to review. 
+     */
     function test_can_move_from_pending_to_review(address payer) external {
         address receiver = msg.sender;
         
@@ -89,7 +101,7 @@ contract TestPaymentBook_Move is TestPaymentBook
         //get the pending bucket 
         PaymentBucket storage pendingBucket = _getBucketWithState(receiver, STATE_PENDING);
         _assert(pendingBucket.payments.length == 3, "Payment count is wrong"); 
-        _assert(_paymentExists(2) == true, "Payment should exist");
+        _assert(paymentExists(2) == true, "Payment should exist");
         _assert(pendingBucket.payments.length == 3, "Payment count is wrong"); 
         _assert(pendingBucket.payments[1].id == 2, "Id is wrong");
         _assert(pendingBucket.payments[1].payer == payer, "Payer is wrong");
@@ -115,6 +127,9 @@ contract TestPaymentBook_Move is TestPaymentBook
         _assert(pendingBucket.payments[1].amount == 0, "Payment 2 amount should be zeroed");
     }
     
+    /**
+     * Add a payment to pending bucket, then move it to review, then back to pending.
+     */
     function test_can_move_from_review_to_pending(address payer) external {
         address receiver = msg.sender;
         
@@ -130,7 +145,7 @@ contract TestPaymentBook_Move is TestPaymentBook
         //get the pending bucket 
         PaymentBucket storage pendingBucket = _getBucketWithState(receiver, STATE_PENDING);
         _assert(pendingBucket.payments.length == 3, "Payment count is wrong"); 
-        _assert(_paymentExists(2) == true, "Payment should exist");
+        _assert(paymentExists(2) == true, "Payment should exist");
         _assert(pendingBucket.payments.length == 3, "Payment count is wrong"); 
         _assert(pendingBucket.payments[1].id == 2, "Id is wrong");
         _assert(pendingBucket.payments[1].payer == payer, "Payer is wrong");

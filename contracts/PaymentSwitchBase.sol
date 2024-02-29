@@ -196,7 +196,7 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * @param receiver Address of receiver for whom to process approved payments. 
      */
     function processPayments(address receiver) public onlyRole(DAO_ROLE) {
-        uint256 amount = _getTotalInState(receiver, STATE_APPROVED);
+        uint256 amount = getTotalInState(receiver, STATE_APPROVED);
         
         //break off fee 
         uint256 fee = 0;

@@ -77,7 +77,7 @@ contract PaymentBook
     function getPaymentById(uint256 id) public view returns (PaymentWithState memory) {
         PaymentWithState memory output; 
         
-        if (_paymentExists(id)) {
+        if (paymentExists(id)) {
             //get the stored payment indicated 
             PaymentAddress memory location = paymentAddresses[id]; 
             PaymentBucket memory bucket = paymentBuckets[location.receiver][location.bucketIndex-1];
@@ -91,6 +91,61 @@ contract PaymentBook
         }
         
         return output;
+    }
+    
+    /**
+     * Returns true if a payment with the given id exists anywhere, in any bucket for 
+     * any receiver. 
+     * 
+     * @param id The payment id. 
+     * 
+     * @return True if a payment with the given id exists. 
+     */
+    function paymentExists(uint256 id) public view returns (bool) {
+        PaymentAddress memory location = paymentAddresses[id]; 
+        return location.receiver != address(0) && location.bucketIndex > 0 && location.paymentIndex > 0;
+    }
+    
+    /**
+     * Gets the total amount that is indicated as locked up for the given receiver in the 
+     * specified state. 
+     * 
+     * For states in which there's only one bucket (e.g. PENDING state), the function will 
+     * simply return the total listed for that single bucket. If no bucket exists for the 
+     * given state, it will return 0. But for states (APPROVED or PROCESSED) which can have 
+     * multiple buckets, it will loop. 
+     * It should be noted that this can potentially overflow, as the total (uint256) is 
+     * incremented. It's unlikely in real life, but it's technically possible. 
+     * 
+     * In actual use, there should normally be a limited number of APPROVED buckets but the 
+     * number of PROCESSED buckets can just keep growing over time. Therefore, it isn't 
+     * recommended to call this with PROCESSED passed for the state. It can potentially 
+     * do a lot of looping. 
+     * 
+     * @param receiver The receiver for whom to calculate bucket totals.
+     * @param state The state of the buckets to tally.
+     * 
+     * @return The total amount in all buckets of the given state for the given receiver.
+     */
+    function getTotalInState(address receiver, uint8 state) public view returns (uint256) {
+        uint256 bucketIndex = _getBucketIndexWithState(receiver, state);
+        if (bucketIndex > 0) {
+            if (state == STATE_REVIEW || state == STATE_PENDING || state == STATE_READY) {
+                return paymentBuckets[receiver][bucketIndex-1].total;
+            }
+            
+            uint256 total = 0;
+            PaymentBucket[] memory buckets = paymentBuckets[receiver];
+            for (uint256 n=bucketIndex; n>0; n--) {
+                if (buckets[n-1].state != state) 
+                    break;
+                total += buckets[n-1].total;
+            }
+            
+            return total;
+        }
+        
+        return 0;
     }
     
     /**
@@ -147,66 +202,11 @@ contract PaymentBook
     }
     
     /**
-     * Returns true if a payment with the given id exists anywhere, in any bucket for 
-     * any receiver. 
-     * 
-     * @param id The payment id. 
-     * 
-     * @return True if a payment with the given id exists. 
-     */
-    function _paymentExists(uint256 id) internal view returns (bool) {
-        PaymentAddress memory location = paymentAddresses[id]; 
-        return location.receiver != address(0) && location.bucketIndex > 0 && location.paymentIndex > 0;
-    }
-    
-    /**
      * 
      */
     function _getPaymentById(uint256 id) internal view returns (Payment storage) {
         PaymentAddress memory location = paymentAddresses[id]; 
         return paymentBuckets[location.receiver][location.bucketIndex-1].payments[location.paymentIndex-1]; 
-    }
-    
-    /**
-     * Gets the total amount that is indicated as locked up for the given receiver in the 
-     * specified state. 
-     * 
-     * For states in which there's only one bucket (e.g. PENDING state), the function will 
-     * simply return the total listed for that single bucket. If no bucket exists for the 
-     * given state, it will return 0. But for states (APPROVED or PROCESSED) which can have 
-     * multiple buckets, it will loop. 
-     * It should be noted that this can potentially overflow, as the total (uint256) is 
-     * incremented. It's unlikely in real life, but it's technically possible. 
-     * 
-     * In actual use, there should normally be a limited number of APPROVED buckets but the 
-     * number of PROCESSED buckets can just keep growing over time. Therefore, it isn't 
-     * recommended to call this with PROCESSED passed for the state. It can potentially 
-     * do a lot of looping. 
-     * 
-     * @param receiver The receiver for whom to calculate bucket totals.
-     * @param state The state of the buckets to tally.
-     * 
-     * @return The total amount in all buckets of the given state for the given receiver.
-     */
-    function _getTotalInState(address receiver, uint8 state) internal view returns (uint256) {
-        uint256 bucketIndex = _getBucketIndexWithState(receiver, state);
-        if (bucketIndex > 0) {
-            if (state == STATE_REVIEW || state == STATE_PENDING || state == STATE_READY) {
-                return paymentBuckets[receiver][bucketIndex-1].total;
-            }
-            
-            uint256 total = 0;
-            PaymentBucket[] memory buckets = paymentBuckets[receiver];
-            for (uint256 n=bucketIndex; n>0; n--) {
-                if (buckets[n-1].state != state) 
-                    break;
-                total += buckets[n-1].total;
-            }
-            
-            return total;
-        }
-        
-        return 0;
     }
     
     /**
