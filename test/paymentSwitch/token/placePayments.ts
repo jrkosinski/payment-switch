@@ -3,10 +3,11 @@ import { ethers } from "hardhat";
 import {
     getTestAccounts,
     deploySecurityContext,
-    deployPaymentSwitchNative,
+    deployPaymentSwitchToken,
+    deployTestToken,
     deployMasterSwitch
 } from "../../utils";
-import { PaymentSwitchNative, MasterSwitch, SecurityContext } from "typechain";
+import { PaymentSwitchToken, TestToken, MasterSwitch, SecurityContext } from "typechain";
 import { applySecurityRoles } from "../../utils/security";
 import { Addressable } from "ethers";
 import { bucketStates } from "../../constants";
@@ -14,9 +15,10 @@ import { IPayment } from "../../utils/IPayment";
 
 
 describe("PaymentSwitch Native: Place Payments}", function () {
-    let paymentSwitch: PaymentSwitchNative;
+    let paymentSwitch: PaymentSwitchToken;
     let masterSwitch: MasterSwitch;
     let securityContext: SecurityContext;
+    let token: TestToken;
     let _paymentId: number = 1;
 
     let addresses: any = {};
@@ -31,16 +33,19 @@ describe("PaymentSwitch Native: Place Payments}", function () {
 
         //apply security roles
         await applySecurityRoles(securityContext, addresses);
+        token = await deployTestToken();
+        await token.mintToCaller(1000000000);
         masterSwitch = await deployMasterSwitch(securityContext.target);
-        paymentSwitch = await deployPaymentSwitchNative(masterSwitch.target);
+        paymentSwitch = await deployPaymentSwitchToken(masterSwitch.target, token.target);
     });
     
     async function placeNewPayment(
         seller: string | Addressable, 
         buyer: string | Addressable, 
         amount: number
-    ) : Promise<number> {
-        await paymentSwitch.placePayment(seller.toString(), { id: _paymentId++, payer: buyer.toString(), amount, refundAmount: 0}, {value:amount});
+    ): Promise<number> {
+        await token.approve(paymentSwitch.target.toString(), amount);
+        await paymentSwitch.placePayment(seller.toString(), { id: _paymentId++, payer: buyer.toString(), amount, refundAmount: 0});
         return _paymentId -1;
     }
 
@@ -50,7 +55,8 @@ describe("PaymentSwitch Native: Place Payments}", function () {
         buyer: string | Addressable,
         amount: number
     ): Promise<void> {
-        await paymentSwitch.placePayment(seller.toString(), { id, payer: buyer.toString(), amount, refundAmount: 0 }, { value: amount });
+        await token.approve(paymentSwitch.target.toString(), amount);
+        await paymentSwitch.placePayment(seller.toString(), { id, payer: buyer.toString(), amount, refundAmount: 0 });
     }
     
     async function getPayment(paymentId: number): Promise<IPayment> {
@@ -66,7 +72,7 @@ describe("PaymentSwitch Native: Place Payments}", function () {
     }
     
     async function getBalance(address: string | Addressable) : Promise<number> {
-        return parseInt((await ethers.provider.getBalance(address)).toString());
+        return parseInt((await token.balanceOf(address.toString())).toString());
     }
 
     describe("Happy Paths", function () {
@@ -170,21 +176,15 @@ describe("PaymentSwitch Native: Place Payments}", function () {
         });
         
         describe("Troubled Paths", function () {
-            it("cannot place a payment when the amount sent is wrong", async function () {
-                const amount: number = 100;
-                await expect(
-                    paymentSwitch.placePayment(
-                        addresses.seller1.toString(), 
-                        { id: 111, payer: addresses.buyer1.toString(), 
-                            amount, 
-                            refundAmount: 0 }, { value: 99 }
-                )).to.be.reverted;
-                return _paymentId - 1;
+            it("cannot place a payment when the amount approved is wrong", async function () {
+            });
+
+            it("cannot place a payment with insufficient funds", async function () {
             });
 
             it("cannot add to existing payment if receiver address differs", async function () {
-                const id = await placeNewPayment(addresses.seller1, addresses.buyer1, 100); 
-                
+                const id = await placeNewPayment(addresses.seller1, addresses.buyer1, 100);
+
                 await expect(addToExistingPayment(id, addresses.seller2, addresses.buyer1, 50)).to.be.reverted;
             });
         });

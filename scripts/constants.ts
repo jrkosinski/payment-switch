@@ -7,7 +7,7 @@ optimism_sepolia
 zkevm_testnet 
 */
 
-export const defaultFeeBps: Number = 100;
+export const defaultFeeBps: number = 100;
 
 export const addresses: any = {
     NETWORK: "optimism_sepolia",

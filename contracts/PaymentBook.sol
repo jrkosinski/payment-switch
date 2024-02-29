@@ -238,7 +238,6 @@ contract PaymentBook
         }
     }
     
-    //test 3
     /**
      * Adds a payment to the given receiver's pending bucket, if no payment with the given id 
      * exists. 
@@ -266,6 +265,12 @@ contract PaymentBook
             uint8 bucketState = paymentBuckets[receiver][bucketIndex-1].state;
             if (bucketState != STATE_PENDING && bucketState != STATE_READY && bucketState != STATE_REVIEW) {
                 revert InvalidPaymentOperation(id); 
+            }
+            
+            //if duplicate, check that the receivers match 
+            if (paymentAddresses[id].receiver != receiver) {
+                revert("Receiver mismatch"); 
+                //TODO: better error to revert with
             }
                 
             //if duplicate, add to the amount 
