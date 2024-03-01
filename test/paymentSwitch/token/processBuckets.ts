@@ -36,7 +36,7 @@ describe("PaymentSwitch Token: Process Buckets", function () {
         token = await deployTestToken();
         await token.mintToCaller(1000000000);
         masterSwitch = await deployMasterSwitch(securityContext.target);
-        paymentSwitch = await deployPaymentSwitchToken(masterSwitch.target);
+        paymentSwitch = await deployPaymentSwitchToken(masterSwitch.target, token.target);
     });
 
     //TODO: standardize these functions 
@@ -91,7 +91,7 @@ describe("PaymentSwitch Token: Process Buckets", function () {
     }
 
     describe("Happy Paths", function () {
-        it.skip("move pending payments to ready", async function () {
+        it("move pending payments to ready", async function () {
 
             //initial values
             expect(await getBalance(paymentSwitch.target)).to.equal(0);
@@ -105,7 +105,7 @@ describe("PaymentSwitch Token: Process Buckets", function () {
                 [addresses.buyer1, addresses.buyer2, addresses.buyer3, addresses.buyer3],
                 [1000, 4000, 3000, 2000]
             );
-            
+
             expect(await getBalance(paymentSwitch.target)).to.equal(10000);
             expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller1, bucketStates.PENDING))).to.equal(5000);
             expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller2, bucketStates.PENDING))).to.equal(3000);
@@ -136,7 +136,7 @@ describe("PaymentSwitch Token: Process Buckets", function () {
             expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller3, bucketStates.READY))).to.equal(2000);
         });
 
-        it.skip("approve a ready bucket", async function () {
+        it("approve a ready bucket", async function () {
             //initial values
             expect(await getBalance(paymentSwitch.target)).to.equal(0);
             expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller1, bucketStates.PENDING))).to.equal(0);
@@ -177,6 +177,68 @@ describe("PaymentSwitch Token: Process Buckets", function () {
         });
 
         it("create multiple approved buckets", async function () {
+            //place a bunch of payments 
+            const ids: number[] = await placePayments(
+                [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller3],
+                [addresses.buyer1, addresses.buyer2, addresses.buyer3, addresses.buyer3],
+                [1000, 4000, 3000, 2000]
+            );
+
+            //move all to ready bucket
+            await Promise.all([
+                paymentSwitch.freezePending(addresses.seller1),
+                paymentSwitch.freezePending(addresses.seller2),
+                paymentSwitch.freezePending(addresses.seller3)
+            ]);
+
+            //approve all ready buckets
+            await Promise.all([
+                paymentSwitch.approvePayments(addresses.seller1),
+                paymentSwitch.approvePayments(addresses.seller2),
+                paymentSwitch.approvePayments(addresses.seller3)
+            ]);
+
+            //place a bunch of payments 
+            const ids2: number[] = await placePayments(
+                [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller3],
+                [addresses.buyer1, addresses.buyer2, addresses.buyer3, addresses.buyer3],
+                [1000, 4000, 3000, 2000]
+            );
+
+            //move all to ready bucket
+            await Promise.all([
+                paymentSwitch.freezePending(addresses.seller1),
+                paymentSwitch.freezePending(addresses.seller2),
+                paymentSwitch.freezePending(addresses.seller3)
+            ]);
+
+            //approve all ready buckets
+            await Promise.all([
+                paymentSwitch.approvePayments(addresses.seller1),
+                paymentSwitch.approvePayments(addresses.seller2),
+                paymentSwitch.approvePayments(addresses.seller3)
+            ]);
+
+            //approved buckets counts should be > 1 for each seller 
+            expect(parseInt(await paymentSwitch.getBucketCountWithState(addresses.seller1, bucketStates.APPROVED))).to.equal(2);
+            expect(parseInt(await paymentSwitch.getBucketCountWithState(addresses.seller2, bucketStates.APPROVED))).to.equal(2);
+            expect(parseInt(await paymentSwitch.getBucketCountWithState(addresses.seller3, bucketStates.APPROVED))).to.equal(2);
+
+            expect(parseInt(await paymentSwitch.getBucketCountWithState(addresses.seller1, bucketStates.READY))).to.equal(0);
+            expect(parseInt(await paymentSwitch.getBucketCountWithState(addresses.seller2, bucketStates.READY))).to.equal(0);
+            expect(parseInt(await paymentSwitch.getBucketCountWithState(addresses.seller3, bucketStates.READY))).to.equal(0);
+
+            expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller1, bucketStates.PENDING))).to.equal(0);
+            expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller2, bucketStates.PENDING))).to.equal(0);
+            expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller3, bucketStates.PENDING))).to.equal(0);
+
+            expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller1, bucketStates.READY))).to.equal(0);
+            expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller2, bucketStates.READY))).to.equal(0);
+            expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller3, bucketStates.READY))).to.equal(0);
+
+            expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller1, bucketStates.APPROVED))).to.equal(10000);
+            expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller2, bucketStates.APPROVED))).to.equal(6000);
+            expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller3, bucketStates.APPROVED))).to.equal(4000);
         });
 
         it("process an approved bucket", async function () {

@@ -69,6 +69,27 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
         masterSwitch = _masterSwitch;
     }
     
+    //TODO: Move to paymentBook
+    function getBucketCountWithState(address receiver, uint8 state) public view returns (uint256) {
+        uint256 index = _getBucketIndexWithState(receiver, state); 
+        uint256 count = 0;
+        
+        if (index > 0) {
+            for(uint256 n=index; n>0; n--) {
+                if (paymentBuckets[receiver][n-1].state != state) {
+                    break;
+                }
+                count++;
+            }
+        }
+        
+        return count;
+    }
+    
+    function getBuckets(address receiver) public view returns (PaymentBucket[] memory) {
+        return paymentBuckets[receiver]; 
+    }
+    
     /**
      * Removes a payment from its current bucket, and moves it into the designated 
      * 'for review' bucket. 
