@@ -124,7 +124,7 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
     function approvePayments(address receiver) public onlyRole(APPROVER_ROLE) {
         uint256 bucketIndex = _getBucketIndexWithState(receiver, STATE_READY); 
         if (bucketIndex > 0) {
-            paymentBuckets[receiver][bucketIndex-1].state == STATE_APPROVED;
+            paymentBuckets[receiver][bucketIndex-1].state = STATE_APPROVED;
         }
     }
     

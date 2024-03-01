@@ -14,7 +14,7 @@ import { bucketStates } from "../../constants";
 import { IPayment } from "../../utils/IPayment";
 
 
-describe("PaymentSwitch Native: Place Payments}", function () {
+describe("PaymentSwitch Token: Place Payments}", function () {
     let paymentSwitch: PaymentSwitchToken;
     let masterSwitch: MasterSwitch;
     let securityContext: SecurityContext;

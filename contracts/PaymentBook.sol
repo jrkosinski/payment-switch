@@ -137,8 +137,9 @@ contract PaymentBook
             uint256 total = 0;
             PaymentBucket[] memory buckets = paymentBuckets[receiver];
             for (uint256 n=bucketIndex; n>0; n--) {
-                if (buckets[n-1].state != state) 
+                if (buckets[n-1].state != state) {
                     break;
+                }
                 total += buckets[n-1].total;
             }
             
@@ -202,7 +203,7 @@ contract PaymentBook
     }
     
     /**
-     * 
+     * Gets a storage reference to the specified payment. 
      */
     function _getPaymentById(uint256 id) internal view returns (Payment storage) {
         PaymentAddress memory location = paymentAddresses[id]; 
@@ -287,6 +288,9 @@ contract PaymentBook
         }
     }
     
+    /**
+     * Sets the states of all APPROVED buckets to PROCESSED, for the given receiver. 
+     */
     function _processApprovedBuckets(address receiver) internal {
         uint256 startIndex = _getBucketIndexWithState(receiver, STATE_APPROVED); 
         if (startIndex > 0) {
@@ -296,6 +300,15 @@ contract PaymentBook
         }
     }
     
+    /**
+     * Erases a payment from its bucket. 
+     * 
+     * @param id The id of the payment to remove. 
+     * @param removeLocation If true, removes the reference to the payment in the {paymentAddresses}
+     * mapping as well as removing it from its bucket. Most of the time, this should be true. 
+     * 
+     * @return A copy of the removed payment. 
+     */
     function _removePayment(uint256 id, bool removeLocation) internal returns (Payment memory) {
         PaymentAddress storage location = paymentAddresses[id]; 
         Payment memory output;
@@ -328,24 +341,27 @@ contract PaymentBook
     //TODO: should have restrictions for moving payments 
     function _movePayment(uint256 id, uint256 destBucketIndex) internal {
         
-        //TODO: check if source == dest bucket
-        
         //remove the payment from source bucket
         PaymentAddress storage location = paymentAddresses[id]; 
-        Payment memory paymentToMove = _removePayment(id, false); 
         
-        if (paymentToMove.amount > 0 && paymentToMove.id == id) {
+        //ignore if source == dest bucket; it would be a non-move
+        if (destBucketIndex != location.bucketIndex) {
+            Payment memory paymentToMove = _removePayment(id, false); 
             
-            //add the new record at the destination bucket
-            PaymentBucket storage destBucket = paymentBuckets[location.receiver][destBucketIndex-1]; 
-            destBucket.payments.push(paymentToMove);
-            
-            //move the location
-            location.bucketIndex = destBucketIndex;
-            location.paymentIndex = destBucket.payments.length;
-            
-            //add the total to dest bucket 
-            destBucket.total += paymentToMove.amount;
+            //check that we're not moving an empty payment 
+            if (paymentToMove.amount > 0 && paymentToMove.id == id) {
+                
+                //add the new record at the destination bucket
+                PaymentBucket storage destBucket = paymentBuckets[location.receiver][destBucketIndex-1]; 
+                destBucket.payments.push(paymentToMove);
+                
+                //move the location
+                location.bucketIndex = destBucketIndex;
+                location.paymentIndex = destBucket.payments.length;
+                
+                //add the total to dest bucket 
+                destBucket.total += paymentToMove.amount;
+            }
         }
     }
     
