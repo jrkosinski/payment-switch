@@ -35,7 +35,7 @@ contract PaymentSwitchToken is PaymentSwitchBase
      * @param seller Address to which the majority of the payment (minus fee) is due. 
      * @param payment Encapsulates the payment data. 
      */
-    function placePayment(address seller, Payment calldata payment) external {
+    function placePayment(address seller, Payment calldata payment) external whenNotPaused {
         //amount should have been pre-approved; otherwise will revert 
         token.transferFrom(msg.sender, address(this), payment.amount);
         

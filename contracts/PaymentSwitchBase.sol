@@ -6,6 +6,7 @@ import "./PaymentBook.sol";
 import "./interfaces/IMasterSwitch.sol";
 import "./utils/CarefulMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol"; 
+import "@openzeppelin/contracts/security/Pausable.sol"; 
 
 //TODO: (HIGH) a way to change master switch address 
 //TODO: (MED) a way to retrieve payment that's been unclaimed 
@@ -23,7 +24,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  * LoadPipe 2024
  * All rights reserved. Unauthorized use prohibited.
  */
-contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard 
+contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard, Pausable
     //TODO: (LOW) consider composing PaymentBook instead of inheriting
 {
     //final approval - amount to pay out to various parties
@@ -88,8 +89,19 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
         return count;
     }
     
+    //TODO: (COM) comment
     function getBuckets(address receiver) public view returns (PaymentBucket[] memory) {
         return paymentBuckets[receiver]; 
+    }
+    
+    //TODO: (COM) comment
+    function pause() external onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+    
+    //TODO: (COM) comment
+    function unpause() external onlyRole(PAUSER_ROLE) {
+        _unpause();
     }
     
     /**
@@ -105,7 +117,7 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * 
      * @param id Identifier of the payment to move.
      */
-    function reviewPayment(uint256 id) external onlyRole(APPROVER_ROLE) {
+    function reviewPayment(uint256 id) external onlyRole(APPROVER_ROLE) whenNotPaused {
         PaymentWithState memory payment = getPaymentById(id); 
         if (payment.state != STATE_PENDING && payment.state != STATE_READY) {
             revert InvalidOrderState(id, payment.state); 
@@ -128,7 +140,7 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * @param id Identifier of the order for which the payment was placed.
      * @param amount The amount to refund, cannot exceed remaining payment amount.
      */
-    function refundPayment(uint256 id, uint256 amount) external onlyRole(REFUNDER_ROLE) {
+    function refundPayment(uint256 id, uint256 amount) external onlyRole(REFUNDER_ROLE) whenNotPaused {
         _refundPayment(id, amount);
     }
     
@@ -144,7 +156,7 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * 
      * @param receiver The receiver for whom to approve payments. 
      */
-    function approvePayments(address receiver) public onlyRole(APPROVER_ROLE) {
+    function approvePayments(address receiver) public onlyRole(APPROVER_ROLE) whenNotPaused {
         uint256 bucketIndex = _getBucketIndexWithState(receiver, STATE_READY); 
         if (bucketIndex > 0) {
             paymentBuckets[receiver][bucketIndex-1].state = STATE_APPROVED;
@@ -163,7 +175,7 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * 
      * @param receivers Array of receivers for whom to approve payments. 
      */
-    function approvePaymentsBatch(address[] calldata receivers) external onlyRole(APPROVER_ROLE) {
+    function approvePaymentsBatch(address[] calldata receivers) external onlyRole(APPROVER_ROLE) whenNotPaused {
         for(uint256 n=0; n<receivers.length; n++) {
             approvePayments(receivers[n]);
         }
@@ -182,7 +194,7 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * 
      * @param receiver Address of receiver for whom to freeze pending payments. 
      */
-    function freezePending(address receiver) public onlyRole(APPROVER_ROLE) {
+    function freezePending(address receiver) public onlyRole(APPROVER_ROLE) whenNotPaused {
         _appendBucket(receiver);
     }
     
@@ -200,7 +212,7 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * 
      * @param receivers Array of receivers for whom to approve payments. 
      */
-    function freezePendingBatch(address[] calldata receivers) external onlyRole(APPROVER_ROLE) {
+    function freezePendingBatch(address[] calldata receivers) external onlyRole(APPROVER_ROLE) whenNotPaused {
         for(uint256 n=0; n<receivers.length; n++) {
             freezePending(receivers[n]);
         }
@@ -218,7 +230,7 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * 
      * @param receiver Address of receiver for whom to process approved payments. 
      */
-    function processPayments(address receiver) public onlyRole(DAO_ROLE) {
+    function processPayments(address receiver) public onlyRole(DAO_ROLE) whenNotPaused {
         uint256 amount = getTotalInState(receiver, STATE_APPROVED);
         
         //break off fee 
@@ -252,7 +264,7 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * 
      * @param receivers Array of receivers for whom to process payments. 
      */
-    function processPaymentsBatch(address[] calldata receivers) external onlyRole(DAO_ROLE) {
+    function processPaymentsBatch(address[] calldata receivers) external onlyRole(DAO_ROLE) whenNotPaused {
         for(uint256 n=0; n<receivers.length; n++) {
             processPayments(receivers[n]);
         }
@@ -270,7 +282,7 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * 
      * @param receiver The receiver of the payments to push. 
      */
-    function pushPayment(address receiver) external onlyRole(DAO_ROLE) {
+    function pushPayment(address receiver) external onlyRole(DAO_ROLE) whenNotPaused {
         _sendPayment(payable(receiver)); 
     }
     
@@ -279,7 +291,7 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * 
      * //TODO: (HIGH) implement & comment 
      */
-    function pullPayment() external  {
+    function pullPayment() whenNotPaused external  {
     }
     
     /**

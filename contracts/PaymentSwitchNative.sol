@@ -31,7 +31,7 @@ contract PaymentSwitchNative is PaymentSwitchBase
      * @param seller Address to which the majority of the payment (minus fee) is due. 
      * @param payment Encapsulates the payment data. 
      */
-    function placePayment(address seller, Payment calldata payment) external payable {
+    function placePayment(address seller, Payment calldata payment) external payable whenNotPaused {
         //check that the amount is correct
         if (payment.amount > msg.value)
             revert PaymentAmountMismatch(payment.amount, msg.value);
