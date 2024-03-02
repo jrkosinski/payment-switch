@@ -92,7 +92,15 @@ describe("Security: Restrictions", function () {
             });
 
             it("refunder can refund payment", async function () {
-                //TODO: (TEST) implement
+                const receiver: string = addresses.seller;
+
+                const ids = await paymentUtil.placePayments(
+                    [receiver, receiver],
+                    [addresses.buyer, addresses.buyer],
+                    [100, 200]
+                );
+                
+                await expect(paymentSwitch.connect(accounts.refunder).refundPayment(ids[1], 50)).to.not.be.reverted;
             });
 
             it("dao can change fee bps", async function () {
@@ -104,7 +112,7 @@ describe("Security: Restrictions", function () {
             });
 
             it("dao can process payments", async function () {
-                await expect(paymentSwitch.connect(accounts.admin).processPayments(addresses.seller)).to.not.be.reverted;
+                await expect(paymentSwitch.connect(accounts.dao).processPayments(addresses.seller)).to.not.be.reverted;
             });
 
             it("dao can process batches of payments", async function () {
@@ -112,7 +120,7 @@ describe("Security: Restrictions", function () {
             });
 
             it("dao can push payments", async function () {
-                await expect(paymentSwitch.connect(accounts.admin).pushPayment(addresses.seller)).to.not.be.reverted;
+                await expect(paymentSwitch.connect(accounts.dao).pushPayment(addresses.seller)).to.not.be.reverted;
             });
         }); 
 
@@ -180,7 +188,18 @@ describe("Security: Restrictions", function () {
             });
 
             it("non-refunder cannot refund payment", async function () {
-                //TODO: (TEST) implement
+                const receiver: string = addresses.seller;
+
+                const ids = await paymentUtil.placePayments(
+                    [receiver, receiver],
+                    [addresses.buyer, addresses.buyer],
+                    [100, 200]
+                );
+
+                await expectRevert(
+                    () => paymentSwitch.connect(accounts.pauser).refundPayment(ids[1], 50), 
+                    constants.errorMessages.UNAUTHORIZED_ACCESS
+                );
             });
 
             it("non-dao cannot change fee bps", async function () {
@@ -198,15 +217,20 @@ describe("Security: Restrictions", function () {
             });
 
             it("non-dao cannot process payments", async function () {
-                //TODO: (TEST) implement
+                await expectRevert(
+                    () => paymentSwitch.connect(accounts.approver).processPayments(addresses.seller),
+                    constants.errorMessages.UNAUTHORIZED_ACCESS
+                );
             });
 
             it("non-dao cannot process batches of payments", async function () {
-                //TODO: (TEST) implement            
             });
 
             it("non-dao cannot push payments", async function () {
-                //TODO: (TEST) implement
+                await expectRevert(
+                    () => paymentSwitch.connect(accounts.refunder).pushPayment(addresses.seller),
+                    constants.errorMessages.UNAUTHORIZED_ACCESS
+                );
             });
         }); 
     });
