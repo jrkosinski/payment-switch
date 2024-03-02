@@ -168,25 +168,27 @@ describe("PaymentSwitch Native: Place Payments}", function () {
             //check that ether amount is stored 
             expect(await getBalance(paymentSwitch.target)).to.equal(amount*3);
         });
-        
-        describe("Troubled Paths", function () {
-            it("cannot place a payment when the amount sent is wrong", async function () {
-                const amount: number = 100;
-                await expect(
-                    paymentSwitch.placePayment(
-                        addresses.seller1.toString(), 
-                        { id: 111, payer: addresses.buyer1.toString(), 
-                            amount, 
-                            refundAmount: 0 }, { value: 99 }
-                )).to.be.reverted;
-                return _paymentId - 1;
-            });
+    });
 
-            it("cannot add to existing payment if receiver address differs", async function () {
-                const id = await placeNewPayment(addresses.seller1, addresses.buyer1, 100); 
-                
-                await expect(addToExistingPayment(id, addresses.seller2, addresses.buyer1, 50)).to.be.reverted;
-            });
+    describe("Troubled Paths", function () {
+        it("cannot place a payment when the amount sent is wrong", async function () {
+            const amount: number = 100;
+            await expect(
+                paymentSwitch.placePayment(
+                    addresses.seller1.toString(),
+                    {
+                        id: 111, payer: addresses.buyer1.toString(),
+                        amount,
+                        refundAmount: 0
+                    }, { value: 99 }
+                )).to.be.reverted;
+            return _paymentId - 1;
+        });
+
+        it("cannot add to existing payment if receiver address differs", async function () {
+            const id = await placeNewPayment(addresses.seller1, addresses.buyer1, 100);
+
+            await expect(addToExistingPayment(id, addresses.seller2, addresses.buyer1, 50)).to.be.reverted;
         });
     });
 });

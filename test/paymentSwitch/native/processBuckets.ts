@@ -247,8 +247,8 @@ describe("PaymentSwitch Native: Process Buckets", function () {
 
         it("process multiple approved buckets", async function () {
         });
+    });
 
-        describe("Troubled Paths", function () {
-        });
+    describe("Troubled Paths", function () {
     });
 });

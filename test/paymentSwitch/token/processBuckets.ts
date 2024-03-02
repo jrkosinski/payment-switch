@@ -57,7 +57,6 @@ describe("PaymentSwitch Token: Process Buckets", function () {
     ): Promise<number[]> {
         const output: number[] = [];
         for (let n = 0; n < sellers.length; n++) {
-            console.log("payment:");
             output.push(await placeNewPayment(sellers[n], buyers[n], amounts[n]));
         }
 
@@ -246,8 +245,8 @@ describe("PaymentSwitch Token: Process Buckets", function () {
 
         it("process multiple approved buckets", async function () {
         });
+    });
 
-        describe("Troubled Paths", function () {
-        });
+    describe("Troubled Paths", function () {
     });
 });

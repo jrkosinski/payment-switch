@@ -174,19 +174,19 @@ describe("PaymentSwitch Token: Place Payments}", function () {
             //check that ether amount is stored 
             expect(await getBalance(paymentSwitch.target)).to.equal(amount*3);
         });
-        
-        describe("Troubled Paths", function () {
-            it("cannot place a payment when the amount approved is wrong", async function () {
-            });
+    });
 
-            it("cannot place a payment with insufficient funds", async function () {
-            });
+    describe("Troubled Paths", function () {
+        it("cannot place a payment when the amount approved is wrong", async function () {
+        });
 
-            it("cannot add to existing payment if receiver address differs", async function () {
-                const id = await placeNewPayment(addresses.seller1, addresses.buyer1, 100);
+        it("cannot place a payment with insufficient funds", async function () {
+        });
 
-                await expect(addToExistingPayment(id, addresses.seller2, addresses.buyer1, 50)).to.be.reverted;
-            });
+        it("cannot add to existing payment if receiver address differs", async function () {
+            const id = await placeNewPayment(addresses.seller1, addresses.buyer1, 100);
+
+            await expect(addToExistingPayment(id, addresses.seller2, addresses.buyer1, 50)).to.be.reverted;
         });
     });
 });
