@@ -35,7 +35,7 @@ describe("PaymentSwitch Native: Process Buckets", function () {
         paymentSwitch = await deployPaymentSwitchNative(masterSwitch.target);
     });
 
-    //TODO: standardize these functions 
+    //TODO: (HIGH) standardize these functions 
     async function placeNewPayment(
         seller: string | Addressable,
         buyer: string | Addressable,

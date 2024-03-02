@@ -66,6 +66,8 @@ contract PaymentBook
     uint8 constant STATE_REVIEW = 5;    //has been removed for admin review
     
     error InvalidPaymentOperation(uint256 id);
+    error InvalidBucketState(uint256 bucketIndex);
+    error ReceiverMismatch(address expected, address actual);
     
     /**
      * Returns a PaymentWithState structure retrieved by payment id. If the id is invalid, 
@@ -230,7 +232,7 @@ contract PaymentBook
         else {
             //not allowed to have two ready buckets at once
             if (buckets.length > 2 && buckets[buckets.length-2].state == STATE_READY)
-                revert("no can do"); //TODO: better error 
+                revert InvalidBucketState(buckets.length);
                 
             //pending bucket becomes ready bucket; new bucket is pending
             buckets[buckets.length-1].state = STATE_READY;
@@ -270,8 +272,7 @@ contract PaymentBook
             
             //if duplicate, check that the receivers match 
             if (paymentAddresses[id].receiver != receiver) {
-                revert("Receiver mismatch"); 
-                //TODO: better error to revert with
+                rever ReceiverMismatch(paymentAddresses[id].receiver, receiver); //TODO: (TEST) test this case
             }
                 
             //if duplicate, add to the amount 
@@ -338,7 +339,7 @@ contract PaymentBook
         return output;
     }
     
-    //TODO: should have restrictions for moving payments 
+    //TODO: (HIGH) should have restrictions for moving payments 
     function _movePayment(uint256 id, uint256 destBucketIndex) internal {
         
         //remove the payment from source bucket

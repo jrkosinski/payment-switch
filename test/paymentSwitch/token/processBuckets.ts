@@ -39,7 +39,7 @@ describe("PaymentSwitch Token: Process Buckets", function () {
         paymentSwitch = await deployPaymentSwitchToken(masterSwitch.target, token.target);
     });
 
-    //TODO: standardize these functions 
+    //TODO: (HIGH) standardize these functions 
     async function placeNewPayment(
         seller: string | Addressable,
         buyer: string | Addressable,

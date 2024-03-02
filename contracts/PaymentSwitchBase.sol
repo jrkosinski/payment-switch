@@ -7,8 +7,8 @@ import "./interfaces/IMasterSwitch.sol";
 import "./utils/CarefulMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol"; 
 
-//TODO: a way to change master switch address 
-//TODO: a way to retrieve payment that's been unclaimed 
+//TODO: (HIGH) a way to change master switch address 
+//TODO: (MED) a way to retrieve payment that's been unclaimed 
 
 /**
  * @title PaymentSwitchBase
@@ -22,7 +22,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  * All rights reserved. Unauthorized use prohibited.
  */
 contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard 
-    //TODO: consider composing PaymentBook instead of inheriting
+    //TODO: (LOW) consider composing PaymentBook instead of inheriting
 {
     //final approval - amount to pay out to various parties
     mapping(address => uint256) internal toPayOut;  // receiver -> amount to pay
@@ -69,7 +69,7 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
         masterSwitch = _masterSwitch;
     }
     
-    //TODO: Move to paymentBook
+    //TODO: (MED) Move to paymentBook
     function getBucketCountWithState(address receiver, uint8 state) public view returns (uint256) {
         uint256 index = _getBucketIndexWithState(receiver, state); 
         uint256 count = 0;
@@ -95,10 +95,10 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * 'for review' bucket. 
      * 
      * Emits: 
-     * - //TODO: inherits emits of _removePayment 
+     * - //TODO: (COM) inherits emits of _removePayment 
      * 
      * Reverts: 
-     * - //TODO: inherits reverts of _removePayment 
+     * - //TODO: (COM) inherits reverts of _removePayment 
      * - 'AccessControl:' if caller is not authorized as APPROVER_ROLE. 
      * 
      * @param id Identifier of the payment to move.
@@ -117,10 +117,10 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * it will also be removed.
      * 
      * Emits: 
-     * - //TODO: inherits emits of _refundPayment 
+     * - //TODO: (COM) inherits emits of _refundPayment 
      * 
      * Reverts: 
-     * - //TODO: inherits reverts of _refundPayment 
+     * - //TODO: (COM) inherits reverts of _refundPayment 
      * - 'AccessControl:' if caller is not authorized as REFUNDER_ROLE. 
      * 
      * @param id Identifier of the order for which the payment was placed.
@@ -134,10 +134,10 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * Approves all current payments marked as ready, for the given receiver. 
      * 
      * Emits: 
-     * - //TODO: inherits emits of _approveReadyBucket 
+     * - //TODO: (COM) inherits emits of _approveReadyBucket 
      * 
      * Reverts: 
-     * - //TODO: inherits reverts of _approveReadyBucket 
+     * - //TODO: (COM) inherits reverts of _approveReadyBucket 
      * - 'AccessControl:' if caller is not authorized as APPROVER_ROLE. 
      * 
      * @param receiver The receiver for whom to approve payments. 
@@ -153,10 +153,10 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * Approves all current payments marked as ready, for the given receiver. 
      * 
      * Emits: 
-     * - //TODO: inherits emits of _approveReadyBucket 
+     * - //TODO: (COM) inherits emits of _approveReadyBucket 
      * 
      * Reverts: 
-     * - //TODO: inherits reverts of _approveReadyBucket 
+     * - //TODO: (COM) inherits reverts of _approveReadyBucket 
      * - 'AccessControl:' if caller is not authorized as APPROVER_ROLE. 
      * 
      * @param receivers Array of receivers for whom to approve payments. 
@@ -172,10 +172,10 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * a ready bucket. A new empty pending bucket will be added for the given receiver.
      * 
      * Emits: 
-     * - //TODO: inherits emits of _pendingToReady 
+     * - //TODO: (COM) inherits emits of _pendingToReady 
      * 
      * Reverts: 
-     * - //TODO: inherits reverts of _pendingToReady 
+     * - //TODO: (COM) inherits reverts of _pendingToReady 
      * - 'AccessControl:' if caller is not authorized as APPROVER_ROLE. 
      * 
      * @param receiver Address of receiver for whom to freeze pending payments. 
@@ -190,10 +190,10 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * of the given receivers.
      * 
      * Emits: 
-     * - //TODO: inherits emits of _pendingToReady 
+     * - //TODO: (COM) inherits emits of _pendingToReady 
      * 
      * Reverts: 
-     * - //TODO: inherits reverts of _pendingToReady 
+     * - //TODO: (COM) inherits reverts of _pendingToReady 
      * - 'AccessControl:' if caller is not authorized as APPROVER_ROLE. 
      * 
      * @param receivers Array of receivers for whom to approve payments. 
@@ -208,10 +208,10 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * Processes all currently approved payments for the given receiver. 
      * 
      * Emits: 
-     * - //TODO: inherits emits of _processApprovedBuckets 
+     * - //TODO: (COM) inherits emits of _processApprovedBuckets 
      * 
      * Reverts: 
-     * - //TODO: inherits reverts of _processApprovedBuckets 
+     * - //TODO: (COM) inherits reverts of _processApprovedBuckets 
      * - 'AccessControl:' if caller is not authorized as DAO_ROLE. 
      * 
      * @param receiver Address of receiver for whom to process approved payments. 
@@ -242,10 +242,10 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
      * array. 
      * 
      * Emits: 
-     * - //TODO: inherits emits of _processApprovedBuckets 
+     * - //TODO: (COM) inherits emits of _processApprovedBuckets 
      * 
      * Reverts: 
-     * - //TODO: inherits reverts of _processApprovedBuckets 
+     * - //TODO: (COM) inherits reverts of _processApprovedBuckets 
      * - 'AccessControl:' if caller is not authorized as DAO_ROLE. 
      * 
      * @param receivers Array of receivers for whom to process payments. 
@@ -275,7 +275,7 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
     /**
      * Pulls all currently due payments to the caller. 
      * 
-     * //TODO: implement & comment 
+     * //TODO: (HIGH) implement & comment 
      */
     function pullPayment() external  {
     }
@@ -347,10 +347,10 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
             
             if (!success)
                 revert PaymentFailed(receiver);
-            //TODO: test failed payment
+            //TODO: (TEST) test failed payment
             
             //emit event 
-            emit PaymentSent(receiver, amount, success); //TODO: test
+            emit PaymentSent(receiver, amount, success);
         }
     }
     

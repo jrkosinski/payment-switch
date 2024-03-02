@@ -54,7 +54,7 @@ describe("Security: Restrictions", function () {
             });
 
             it("approver can freeze the pending bucket", async function () {
-
+                
             });
 
             it("approver can freeze a pending batch", async function () {
@@ -78,7 +78,7 @@ describe("Security: Restrictions", function () {
             });
 
             it("dao can process batches of payments", async function () {
-
+                
             });
 
             it("dao can push payments", async function () {

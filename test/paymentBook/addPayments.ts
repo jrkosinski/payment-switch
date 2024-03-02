@@ -59,7 +59,4 @@ describe("PaymentBook: Add Payments", function () {
     it("cannot add to existing payment in processed bucket", async () => {
         await expect(paymentBook.test_cannot_add_to_existing_in_processed(addresses.buyer)).to.be.reverted;
     });
-    
-    //TODO: add $ to existing payments in various buckets 
-    //TODO: add $ to existing payments in buckets fails for wrong bucket states
 });

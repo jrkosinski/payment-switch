@@ -151,7 +151,7 @@ export async function getTokenBalanceAsNumber(tokenAddress: string | Addressable
     );
 }
 
-//TODO: comment 
+//TODO: (COM) comment 
 export function convertPendingBucket(response: any): any {
     const output: { total: number, payments: any[] } = { total: 0, payments: [] };
     output.total = parseInt(response[0]);

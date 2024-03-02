@@ -3,7 +3,7 @@ import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { SecurityContext } from "typechain";
 import * as constants from "../constants";
 
-//TODO: not sure if any of these are ever used 
+//TODO: (LOW) not sure if any of these are ever used 
 
 export async function getSecurityContext(contract: any) {
     let secManagerAddr;
@@ -25,7 +25,7 @@ export async function revokeRole(secMan: any, role: string, fromAddress: string,
 }
 
 export async function applySecurityRoles(securityContext: SecurityContext, addresses: any) {
-    //TODO: this can be refactored to be more generic, later
+    //TODO: (LOW) this can be refactored to be more generic, later
     if (addresses.admin) {
         await securityContext.grantRole(constants.roles.admin, addresses.admin);
         await securityContext.grantRole(constants.roles.refunder, addresses.admin);
