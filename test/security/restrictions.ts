@@ -46,23 +46,23 @@ describe("Security: Restrictions", function () {
             });
 
             it("approver can approve batches of payments", async function () {
-                
+                //TODO: (TEST) implement
             });
 
             it("approver can review payments", async function () {
-
+                //TODO: (TEST) implement
             });
 
             it("approver can freeze the pending bucket", async function () {
-                
+                //TODO: (TEST) implement
             });
 
             it("approver can freeze a pending batch", async function () {
-
+                //TODO: (TEST) implement
             });
 
             it("refunder can refund payment", async function () {
-
+                //TODO: (TEST) implement
             });
 
             it("dao can change fee bps", async function () {
@@ -92,47 +92,48 @@ describe("Security: Restrictions", function () {
             });
 
             it("non-approver cannot approve payments", async function () {
-
+                //TODO: (TEST) implement
             });
 
             it("non-approver cannot approve batches of payments", async function () {
-
+                //TODO: (TEST) implement
             });
 
             it("non-approver cannot review payments", async function () {
-
+                //TODO: (TEST) implement
             });
 
             it("non-approver cannot freeze the pending bucket", async function () {
-
+                //TODO: (TEST) implement
             });
 
             it("non-approver cannot freeze a pending batch", async function () {
-
+                //TODO: (TEST) implement
             });
 
             it("non-refunder cannot refund payment", async function () {
 
+                //TODO: (TEST) implement
             });
 
             it("non-dao cannot change fee bps", async function () {
-
+                //TODO: (TEST) implement
             });
 
             it("non-dao cannot set the vault address", async function () {
-
+                //TODO: (TEST) implement
             });
 
             it("non-dao cannot process payments", async function () {
-
+                //TODO: (TEST) implement
             });
 
             it("non-dao cannot process batches of payments", async function () {
-
+                //TODO: (TEST) implement            
             });
 
             it("non-dao cannot push payments", async function () {
-
+                //TODO: (TEST) implement
             });
         }); 
     });

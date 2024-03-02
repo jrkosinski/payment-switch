@@ -272,7 +272,7 @@ contract PaymentBook
             
             //if duplicate, check that the receivers match 
             if (paymentAddresses[id].receiver != receiver) {
-                rever ReceiverMismatch(paymentAddresses[id].receiver, receiver); //TODO: (TEST) test this case
+                revert ReceiverMismatch(paymentAddresses[id].receiver, receiver); //TODO: (TEST) test this case
             }
                 
             //if duplicate, add to the amount 

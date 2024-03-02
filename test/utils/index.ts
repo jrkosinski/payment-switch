@@ -151,45 +151,6 @@ export async function getTokenBalanceAsNumber(tokenAddress: string | Addressable
     );
 }
 
-//TODO: (COM) comment 
-export function convertPendingBucket(response: any): any {
-    const output: { total: number, payments: any[] } = { total: 0, payments: [] };
-    output.total = parseInt(response[0]);
-    output.payments = [];
-    const objects = response[1];
-    objects.forEach((o: any) => {
-        output.payments.push({
-            orderId: parseInt(o[0]),
-            payer: o[1],
-            amount: parseInt(o[2]),
-            refunded: o[3]
-        });
-    });
-    return output;
-}
-
-export function createOrderId() : number {
-    return Math.floor(Math.random() * 999999999) +1;
-}
-
-export async function placePayment(paymentSwitch: any, 
-    sellerAddr: string, 
-    buyerAddr: string, 
-    amount: number,
-    orderId: number = 0
-) {
-    if (orderId <= 0) {
-        orderId = createOrderId();
-    }
-    
-    const paymentData: IPayment = {
-        amount, payer: buyerAddr, orderId: orderId, refunded: false
-    };
-
-    await paymentSwitch.placePayment(sellerAddr, paymentData, { value: amount });
-    return paymentData;
-}
-
 export { revokeRole, grantRole, getSecurityContext } from "./security";
 export {
     deployPaymentSwitchNative,
