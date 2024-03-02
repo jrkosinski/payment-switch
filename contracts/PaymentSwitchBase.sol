@@ -9,6 +9,8 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 //TODO: (HIGH) a way to change master switch address 
 //TODO: (MED) a way to retrieve payment that's been unclaimed 
+//TODO: (MED) implement pausing 
+//TODO: (MED) make upgradeable
 
 /**
  * @title PaymentSwitchBase

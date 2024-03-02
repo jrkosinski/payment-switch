@@ -11,12 +11,14 @@ import {
     grantRole
 } from "../utils";
 import { applySecurityRoles } from "../utils/security";
+import { PaymentUtil } from "../utils/PaymentUtil";
 
 describe("Security: Restrictions", function () {
     let securityContext: SecurityContext;
     let securityContext2: SecurityContext;
     let masterSwitch: MasterSwitch;
     let paymentSwitch: PaymentSwitchNative;
+    let paymentUtil: PaymentUtil;
     let addresses: any = {};
     let accounts: any = {};
 
@@ -29,6 +31,7 @@ describe("Security: Restrictions", function () {
         securityContext2 = await deploySecurityContext(addresses.admin);
         masterSwitch = await deployMasterSwitch(securityContext.target);
         paymentSwitch = await deployPaymentSwitchNative(masterSwitch.target);
+        paymentUtil = new PaymentUtil(paymentSwitch);
         
         await applySecurityRoles(securityContext, addresses);
     });
@@ -42,6 +45,14 @@ describe("Security: Restrictions", function () {
             it("approver can approve payments", async function () {
                 const receiver: string = addresses.seller;
                 
+                await paymentUtil.placePayments(
+                    [receiver, receiver], 
+                    [addresses.buyer, addresses.buyer],
+                    [100, 200]
+                );
+                
+                await paymentSwitch.freezePending(receiver);
+                
                 await expect(paymentSwitch.connect(accounts.approver).approvePayments(receiver)).to.not.be.reverted;
             });
 
@@ -50,11 +61,30 @@ describe("Security: Restrictions", function () {
             });
 
             it("approver can review payments", async function () {
-                //TODO: (TEST) implement
+                const receiver: string = addresses.seller;
+
+                const ids: number[] = await paymentUtil.placePayments(
+                    [receiver, receiver],
+                    [addresses.buyer, addresses.buyer],
+                    [100, 200]
+                );
+
+                await paymentSwitch.freezePending(receiver);
+
+                //move a payment to review
+                await expect(paymentSwitch.connect(accounts.approver).reviewPayment(ids[1])).to.not.be.reverted;
             });
 
             it("approver can freeze the pending bucket", async function () {
-                //TODO: (TEST) implement
+                const receiver: string = addresses.seller;
+
+                await paymentUtil.placePayments(
+                    [receiver, receiver],
+                    [addresses.buyer, addresses.buyer],
+                    [100, 200]
+                );
+
+                await expect(paymentSwitch.connect(accounts.approver).freezePending(receiver)).to.not.be.reverted;
             });
 
             it("approver can freeze a pending batch", async function () {
@@ -92,7 +122,20 @@ describe("Security: Restrictions", function () {
             });
 
             it("non-approver cannot approve payments", async function () {
-                //TODO: (TEST) implement
+                const receiver: string = addresses.seller;
+
+                await paymentUtil.placePayments(
+                    [receiver, receiver],
+                    [addresses.buyer, addresses.buyer],
+                    [100, 200]
+                );
+
+                await paymentSwitch.freezePending(receiver);
+
+                await expectRevert(
+                    () => paymentSwitch.connect(accounts.buyer).approvePayments(receiver), 
+                    constants.errorMessages.UNAUTHORIZED_ACCESS
+                );
             });
 
             it("non-approver cannot approve batches of payments", async function () {
@@ -100,11 +143,36 @@ describe("Security: Restrictions", function () {
             });
 
             it("non-approver cannot review payments", async function () {
-                //TODO: (TEST) implement
+                const receiver: string = addresses.seller;
+
+                const ids: number[] = await paymentUtil.placePayments(
+                    [receiver, receiver],
+                    [addresses.buyer, addresses.buyer],
+                    [100, 200]
+                );
+
+                await paymentSwitch.freezePending(receiver);
+                
+                //move a payment to review
+                await expectRevert(
+                    () => paymentSwitch.connect(accounts.pauser).reviewPayment(ids[1]), 
+                    constants.errorMessages.UNAUTHORIZED_ACCESS
+                );
             });
 
             it("non-approver cannot freeze the pending bucket", async function () {
-                //TODO: (TEST) implement
+                const receiver: string = addresses.seller;
+
+                await paymentUtil.placePayments(
+                    [receiver, receiver],
+                    [addresses.buyer, addresses.buyer],
+                    [100, 200]
+                );
+
+                await expectRevert(
+                    () => paymentSwitch.connect(accounts.refunder).freezePending(receiver),
+                    constants.errorMessages.UNAUTHORIZED_ACCESS
+                );
             });
 
             it("non-approver cannot freeze a pending batch", async function () {
@@ -112,16 +180,21 @@ describe("Security: Restrictions", function () {
             });
 
             it("non-refunder cannot refund payment", async function () {
-
                 //TODO: (TEST) implement
             });
 
             it("non-dao cannot change fee bps", async function () {
-                //TODO: (TEST) implement
+                await expectRevert(
+                    () => masterSwitch.connect(accounts.approver).setFeeBps(200),
+                    constants.errorMessages.UNAUTHORIZED_ACCESS
+                );
             });
 
             it("non-dao cannot set the vault address", async function () {
-                //TODO: (TEST) implement
+                await expectRevert(
+                    () => masterSwitch.connect(accounts.approver).setVaultAddress(addresses.admin), 
+                    constants.errorMessages.UNAUTHORIZED_ACCESS
+                );
             });
 
             it("non-dao cannot process payments", async function () {
