@@ -5,14 +5,15 @@ import {
     deploySecurityContext,
     deployPaymentSwitchToken,
     deployTestToken,
-    deployMasterSwitch
+    deployMasterSwitch,
+    expectRevert
 } from "../../utils";
 import { PaymentSwitchToken, TestToken, MasterSwitch, SecurityContext } from "typechain";
 import { applySecurityRoles } from "../../utils/security";
-import { Addressable } from "ethers";
-import { bucketStates, paymentStates } from "../../constants";
+import { bucketStates } from "../../constants";
 import { IPayment } from "../../utils/IPayment";
 import { PaymentUtil } from "../../utils/PaymentUtil";
+import * as constants from "../../constants";
 
 
 describe("PaymentSwitch Token: Place Payments}", function () {
@@ -143,8 +144,21 @@ describe("PaymentSwitch Token: Place Payments}", function () {
     });
 
     describe("Troubled Paths", function () {
-        it("cannot place a payment when the amount approved is wrong", async function () {
-            //TODO: (TEST) implement
+        it("cannot place a payment when the amount approved is too little", async function () {
+            const amount: number = 100;
+            const payment = {
+                id: 1,
+                payer: addresses.buyer1,
+                amount,
+                refundAmount: 0
+            };
+            
+            await token.approve(paymentSwitch.target.toString(), amount-1);
+            
+            await expectRevert(
+                () => paymentSwitch.placePayment(addresses.seller1, payment),
+                "ERC20: insufficient allowance"
+            ); 
         });
 
         it("cannot place a payment with insufficient funds", async function () {

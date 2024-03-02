@@ -4,7 +4,8 @@ import {
     getTestAccounts,
     deploySecurityContext,
     deployPaymentSwitchNative,
-    deployMasterSwitch
+    deployMasterSwitch,
+    expectRevert
 } from "../../utils";
 import { PaymentSwitchNative, MasterSwitch, SecurityContext } from "typechain";
 import { applySecurityRoles } from "../../utils/security";
@@ -12,6 +13,7 @@ import { Addressable } from "ethers";
 import { bucketStates } from "../../constants";
 import { IPayment } from "../../utils/IPayment";
 import { PaymentUtil } from "../../utils/PaymentUtil"; 
+import * as constants from "../../constants";
 
 
 describe("PaymentSwitch Native: Place Payments}", function () {
@@ -140,23 +142,40 @@ describe("PaymentSwitch Native: Place Payments}", function () {
     });
 
     describe("Troubled Paths", function () {
-        it("cannot place a payment when the amount sent is wrong", async function () {
+        it("cannot place a payment when the amount sent is too little", async function () {
             const amount: number = 100;
-            await expect(
-                paymentSwitch.placePayment(
-                    addresses.seller1.toString(),
-                    {
-                        id: 111, payer: addresses.buyer1.toString(),
-                        amount,
-                        refundAmount: 0
-                    }, { value: 99 }
-                )).to.be.reverted;
-            return _paymentId - 1;
+            
+            const payment = {
+                id: 1,
+                payer: addresses.buyer1,
+                amount,
+                refundAmount: 0
+            };
+
+            await expectRevert(
+                () => paymentSwitch.placePayment(addresses.seller1, payment, {value:amount-1}),
+                "PaymentAmountMismatch"
+            ); 
         });
+        
+        it("can place a payment when the amount sent is too much", async function () {
+            const amount: number = 100;
+
+            const payment = {
+                id: 1,
+                payer: addresses.buyer1,
+                amount,
+                refundAmount: 0
+            };
+
+            await paymentSwitch.placePayment(addresses.seller1, payment, { value: amount + 1 })
+            await expect(paymentSwitch.placePayment(addresses.seller1, payment, { value: amount + 1 })).to.not.be.reverted;
+        }); 
 
         it("cannot add to existing payment if receiver address differs", async function () {
             const id = await paymentUtil.placePayment(addresses.seller1, addresses.buyer1, 100);
 
+            //TODO: (TEST) specify what it gets reverted with
             await expect(paymentUtil.addToExistingPayment(id, addresses.seller2, addresses.buyer1, 50)).to.be.reverted;
         });
     });

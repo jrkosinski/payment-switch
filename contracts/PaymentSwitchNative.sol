@@ -33,7 +33,7 @@ contract PaymentSwitchNative is PaymentSwitchBase
      */
     function placePayment(address seller, Payment calldata payment) external payable {
         //check that the amount is correct
-        if (payment.amount != msg.value)
+        if (payment.amount > msg.value)
             revert PaymentAmountMismatch(payment.amount, msg.value);
             
         _onPaymentReceived(seller, payment);

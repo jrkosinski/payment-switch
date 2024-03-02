@@ -374,7 +374,7 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard
         _addPayment(seller, payment.id, payment.payer, payment.amount);     
         
         //event 
-        emit PaymentPlaced( //TODO: add order id 
+        emit PaymentPlaced( //TODO: (MED) add payment id 
             payment.payer, 
             seller, 
             payment.amount

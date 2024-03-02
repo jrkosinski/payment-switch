@@ -33,7 +33,8 @@ export class PaymentUtil {
             await this.paymentSwitch.placePayment(seller.toString(), {
                 id: this.paymentId++,
                 payer: buyer.toString(),
-                amount, refundAmount: 0
+                amount, 
+                refundAmount: 0
             }, {value:amount}); 
         }
         return this.paymentId - 1;

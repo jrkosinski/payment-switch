@@ -56,21 +56,21 @@ describe("SecurityContext", function () {
             await expectRevert(
                 () => masterSwitch.setSecurityContext(constants.addresses.zeroAddress),
                 constants.errorMessages.ZERO_ADDRESS
-            )
+            ); 
         });
 
         it("cannot set zero address to product nft security manager", async function () {
             await expectRevert(
                 () => masterSwitch.setSecurityContext(constants.addresses.zeroAddress),
                 constants.errorMessages.ZERO_ADDRESS
-            )
+            ); 
         });
 
         it("cannot set zero address to whitelist security manager", async function () {
             await expectRevert(
                 () => masterSwitch.setSecurityContext(constants.addresses.zeroAddress),
                 constants.errorMessages.ZERO_ADDRESS
-            )
+            ); 
         });
 
         it("cannot set bogus address for security manager", async function () {
