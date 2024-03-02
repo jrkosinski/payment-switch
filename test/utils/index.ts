@@ -190,7 +190,7 @@ export async function placePayment(paymentSwitch: any,
     return paymentData;
 }
 
-export { revokeRole, grantRole, getSecurityManager } from "./security";
+export { revokeRole, grantRole, getSecurityContext } from "./security";
 export {
     deployPaymentSwitchNative,
     deployPaymentSwitchToken,

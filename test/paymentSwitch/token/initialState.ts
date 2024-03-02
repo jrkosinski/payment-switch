@@ -14,7 +14,7 @@ import { applySecurityRoles } from "../../utils/security";
 describe("PaymentSwitch Token: Initial State", function () {
     let paymentSwitch: PaymentSwitchToken;
     let masterSwitch: MasterSwitch;
-    let securityManager: SecurityContext;
+    let securityContext: SecurityContext;
     let token: TestToken;
 
     let addresses: any = {};
@@ -22,11 +22,11 @@ describe("PaymentSwitch Token: Initial State", function () {
     this.beforeEach(async function () {
         let acc = await getTestAccounts(['admin', 'approver', 'dao', 'system']);
         addresses = acc.addresses;
-        securityManager = await deploySecurityContext(addresses.admin);
+        securityContext = await deploySecurityContext(addresses.admin);
 
         //apply security roles
-        await applySecurityRoles(securityManager, addresses);
-        masterSwitch = await deployMasterSwitch(securityManager.target);
+        await applySecurityRoles(securityContext, addresses);
+        masterSwitch = await deployMasterSwitch(securityContext.target);
         token = await deployTestToken();
         paymentSwitch = await deployPaymentSwitchToken(masterSwitch.target, token.target);
     });

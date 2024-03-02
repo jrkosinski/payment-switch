@@ -5,8 +5,8 @@ export const roles = {
     pauser: ethers.keccak256(ethers.toUtf8Bytes("PAUSER_ROLE")),
     upgrader: ethers.keccak256(ethers.toUtf8Bytes("UPGRADER_ROLE")),
     system: ethers.keccak256(ethers.toUtf8Bytes("SYSTEM_ROLE")),
-    approver: ethers.keccak256(ethers.toUtf8Bytes("APPROVER_ROLE")),
     dao: ethers.keccak256(ethers.toUtf8Bytes("DAO_ROLE")),
+    approver: ethers.keccak256(ethers.toUtf8Bytes("APPROVER_ROLE")),
     refunder: ethers.keccak256(ethers.toUtf8Bytes("REFUNDER_ROLE"))
 };
 
