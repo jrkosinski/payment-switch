@@ -11,7 +11,7 @@ import { PaymentSwitchToken, TestToken, MasterSwitch, SecurityContext } from "ty
 import { applySecurityRoles } from "../../utils/security";
 import { Addressable } from "ethers";
 import { bucketStates } from "../../constants";
-import { IPayment } from "../../utils/IPayment";
+import { PaymentUtil } from "../../utils/PaymentUtil";
 
 
 describe("PaymentSwitch Token: Process Buckets", function () {
@@ -20,7 +20,7 @@ describe("PaymentSwitch Token: Process Buckets", function () {
     let securityContext: SecurityContext;
     let token: TestToken;
     let _paymentId: number = 1;
-
+    let paymentUtil: PaymentUtil;
     let addresses: any = {};
 
     this.beforeEach(async function () {
@@ -37,75 +37,26 @@ describe("PaymentSwitch Token: Process Buckets", function () {
         await token.mintToCaller(1000000000);
         masterSwitch = await deployMasterSwitch(securityContext.target);
         paymentSwitch = await deployPaymentSwitchToken(masterSwitch.target, token.target);
+        paymentUtil = new PaymentUtil(paymentSwitch, token);
     });
-
-    //TODO: (HIGH) standardize these functions 
-    async function placeNewPayment(
-        seller: string | Addressable,
-        buyer: string | Addressable,
-        amount: number
-    ): Promise<number> {
-        await token.approve(paymentSwitch.target.toString(), amount);
-        await paymentSwitch.placePayment(seller.toString(), { id: _paymentId++, payer: buyer.toString(), amount, refundAmount: 0 });
-        return _paymentId - 1;
-    }
-
-    async function placePayments(
-        sellers: string[] | Addressable[],
-        buyers: string[] | Addressable[],
-        amounts: number[]
-    ): Promise<number[]> {
-        const output: number[] = [];
-        for (let n = 0; n < sellers.length; n++) {
-            output.push(await placeNewPayment(sellers[n], buyers[n], amounts[n]));
-        }
-
-        return output;
-    }
-
-    async function addToExistingPayment(
-        id: number,
-        seller: string | Addressable,
-        buyer: string | Addressable,
-        amount: number
-    ): Promise<void> {
-        await token.approve(paymentSwitch.target.toString(), amount);
-        await paymentSwitch.placePayment(seller.toString(), { id, payer: buyer.toString(), amount, refundAmount: 0 });
-    }
-
-    async function getPayment(paymentId: number): Promise<IPayment> {
-        const result = await paymentSwitch.getPaymentById(paymentId);
-        const payment = {
-            id: parseInt(result[0]),
-            payer: result[1],
-            amount: parseInt(result[2]),
-            refundAmount: parseInt(result[3]),
-            state: parseInt(result[4].toString())
-        }
-        return payment;
-    }
-
-    async function getBalance(address: string | Addressable): Promise<number> {
-        return parseInt((await token.balanceOf(address.toString())).toString());
-    }
 
     describe("Happy Paths", function () {
         it("move pending payments to ready", async function () {
 
             //initial values
-            expect(await getBalance(paymentSwitch.target)).to.equal(0);
+            expect(await paymentUtil.getBalance(paymentSwitch.target)).to.equal(0);
             expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller1, bucketStates.PENDING))).to.equal(0);
             expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller2, bucketStates.PENDING))).to.equal(0);
             expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller3, bucketStates.PENDING))).to.equal(0);
 
             //place a bunch of payments 
-            const ids: number[] = await placePayments(
+            const ids: number[] = await paymentUtil.placePayments(
                 [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller3],
                 [addresses.buyer1, addresses.buyer2, addresses.buyer3, addresses.buyer3],
                 [1000, 4000, 3000, 2000]
             );
 
-            expect(await getBalance(paymentSwitch.target)).to.equal(10000);
+            expect(await paymentUtil.getBalance(paymentSwitch.target)).to.equal(10000);
             expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller1, bucketStates.PENDING))).to.equal(5000);
             expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller2, bucketStates.PENDING))).to.equal(3000);
             expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller3, bucketStates.PENDING))).to.equal(2000);
@@ -115,10 +66,10 @@ describe("PaymentSwitch Token: Process Buckets", function () {
             expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller1, bucketStates.PENDING))).to.equal(0);
             expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller1, bucketStates.READY))).to.equal(5000);
 
-            const payment1 = await getPayment(ids[0]);
-            const payment2 = await getPayment(ids[1]);
-            const payment3 = await getPayment(ids[2]);
-            const payment4 = await getPayment(ids[3]);
+            const payment1 = await paymentUtil.getPayment(ids[0]);
+            const payment2 = await paymentUtil.getPayment(ids[1]);
+            const payment3 = await paymentUtil.getPayment(ids[2]);
+            const payment4 = await paymentUtil.getPayment(ids[3]);
             expect(payment1.state).to.equal(bucketStates.READY);
             expect(payment2.state).to.equal(bucketStates.READY);
             expect(payment3.state).to.equal(bucketStates.PENDING);
@@ -137,19 +88,19 @@ describe("PaymentSwitch Token: Process Buckets", function () {
 
         it("approve a ready bucket", async function () {
             //initial values
-            expect(await getBalance(paymentSwitch.target)).to.equal(0);
+            expect(await paymentUtil.getBalance(paymentSwitch.target)).to.equal(0);
             expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller1, bucketStates.PENDING))).to.equal(0);
             expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller2, bucketStates.PENDING))).to.equal(0);
             expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller3, bucketStates.PENDING))).to.equal(0);
 
             //place a bunch of payments 
-            const ids: number[] = await placePayments(
+            const ids: number[] = await paymentUtil.placePayments(
                 [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller3],
                 [addresses.buyer1, addresses.buyer2, addresses.buyer3, addresses.buyer3],
                 [1000, 4000, 3000, 2000]
             );
 
-            expect(await getBalance(paymentSwitch.target)).to.equal(10000);
+            expect(await paymentUtil.getBalance(paymentSwitch.target)).to.equal(10000);
             expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller1, bucketStates.PENDING))).to.equal(5000);
             expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller2, bucketStates.PENDING))).to.equal(3000);
             expect(parseInt(await paymentSwitch.getTotalInState(addresses.seller3, bucketStates.PENDING))).to.equal(2000);
@@ -177,7 +128,7 @@ describe("PaymentSwitch Token: Process Buckets", function () {
 
         it("create multiple approved buckets", async function () {
             //place a bunch of payments 
-            const ids: number[] = await placePayments(
+            const ids: number[] = await paymentUtil.placePayments(
                 [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller3],
                 [addresses.buyer1, addresses.buyer2, addresses.buyer3, addresses.buyer3],
                 [1000, 4000, 3000, 2000]
@@ -198,7 +149,7 @@ describe("PaymentSwitch Token: Process Buckets", function () {
             ]);
 
             //place a bunch of payments 
-            const ids2: number[] = await placePayments(
+            const ids2: number[] = await paymentUtil.placePayments(
                 [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller3],
                 [addresses.buyer1, addresses.buyer2, addresses.buyer3, addresses.buyer3],
                 [1000, 4000, 3000, 2000]
@@ -250,5 +201,10 @@ describe("PaymentSwitch Token: Process Buckets", function () {
     });
 
     describe("Troubled Paths", function () {
+        //TODO: (TEST) implement
+    });
+    
+    describe("Events", function () {
+        //TODO: (TEST) implement
     });
 });

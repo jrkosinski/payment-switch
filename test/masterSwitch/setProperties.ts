@@ -39,4 +39,8 @@ describe("MasterSwitch: Set Properties", function () {
         await master.connect(accounts.dao).setVaultAddress(addresses.vault);
         expect(await master.vaultAddress()).to.equal(addresses.vault);
     });
+
+    describe("Events", function () {
+        //TODO: (TEST) implement
+    });
 });

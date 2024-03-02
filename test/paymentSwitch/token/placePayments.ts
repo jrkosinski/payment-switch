@@ -157,4 +157,8 @@ describe("PaymentSwitch Token: Place Payments}", function () {
             await expect(paymentUtil.addToExistingPayment(id, addresses.seller2, addresses.buyer1, 50)).to.be.reverted;
         });
     });
+
+    describe("Events", function () {
+        //TODO: (TEST) implement
+    });
 });

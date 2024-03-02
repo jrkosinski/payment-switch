@@ -38,6 +38,19 @@ export class PaymentUtil {
         }
         return this.paymentId - 1;
     }
+
+    async placePayments(
+        sellers: string[] | Addressable[],
+        buyers: string[] | Addressable[],
+        amounts: number[]
+    ): Promise<number[]> {
+        const output: number[] = [];
+        for (let n = 0; n < sellers.length; n++) {
+            output.push(await this.placePayment(sellers[n], buyers[n], amounts[n]));
+        }
+
+        return output;
+    }
     
     async addToExistingPayment(
         id: number,
