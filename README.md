@@ -1,14 +1,12 @@
-# Loadpipe Payment Switch
+# Payment Switch 
 
 ## Setup & Operation
 
 ### Setup
-- install node and npm 
 - install hardhat globally
 - create .env file (using example.env as example)
 
 ```
-npm install
 yarn install
 ```
 
@@ -24,12 +22,3 @@ npx hardhat compile
 ```
 npx hardhat test
 ```
-
-### Run Echidna Tests
-in /test directory: run echidna.sh
-
-
-```
-
-```
-
