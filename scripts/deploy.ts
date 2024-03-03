@@ -2,7 +2,7 @@ import { HardhatEthersProvider } from "@nomicfoundation/hardhat-ethers/internal/
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import {
-    deploySecurityManager,
+    deploySecurityContext,
     deployPaymentSwitchNative, 
     deployMasterSwitch
 } from "./lib/deployment";
@@ -19,12 +19,12 @@ run(async (provider: HardhatEthersProvider, owner: HardhatEthersSigner) => {
     // payment switch: 0xD48425B7fb702F571D872f4b7046B30c9FA47e15
 
     //deploy security manager 
-    const securityManager = await deploySecurityManager(owner.address);
-    console.log("security manager:", securityManager.target);
+    const securityContext = await deploySecurityContext(owner.address);
+    console.log("security manager:", securityContext.target);
     await sleep(3000);
     
     //deploy the switch 
-    const paymentSwitch = await deployMasterSwitch(securityManager.target, owner.address, 100);
+    const paymentSwitch = await deployMasterSwitch(securityContext.target, owner.address, 100);
     console.log("payment switch:", paymentSwitch.target);
     await sleep(3000);
 }); 
