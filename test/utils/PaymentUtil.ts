@@ -23,18 +23,19 @@ export class PaymentUtil {
 
         if (this.token) {
             await this.token.approve(this.paymentSwitch.target.toString(), amount);
-            await this.paymentSwitch.placePayment(seller.toString(), { 
+            await this.paymentSwitch.placePayment({ 
+                receiver: seller.toString(), 
                 id: this.paymentId++, 
                 payer: buyer.toString(), 
-                amount, refundAmount: 0 
+                amount
             }); 
         }
         else {
-            await this.paymentSwitch.placePayment(seller.toString(), {
+            await this.paymentSwitch.placePayment({
+                receiver: seller.toString(), 
                 id: this.paymentId++,
                 payer: buyer.toString(),
                 amount, 
-                refundAmount: 0
             }, {value:amount}); 
         }
         return this.paymentId - 1;
@@ -61,19 +62,19 @@ export class PaymentUtil {
     ): Promise<void> {
         if (this.token) {
             await this.token.approve(this.paymentSwitch.target.toString(), amount);
-            await this.paymentSwitch.placePayment(seller.toString(), {
+            await this.paymentSwitch.placePayment({
+                receiver: seller.toString(),
                 id,
                 payer: buyer.toString(),
-                amount,
-                refundAmount: 0
+                amount
             });
         }
         else {
-            await this.paymentSwitch.placePayment(seller.toString(), {
+            await this.paymentSwitch.placePayment({
+                receiver: seller.toString(), 
                 id,
                 payer: buyer.toString(),
-                amount,
-                refundAmount: 0
+                amount
             }, {value:amount});
         }
     }

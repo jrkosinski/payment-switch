@@ -5,7 +5,8 @@ import {
     deploySecurityContext,
     deployPaymentSwitchNative,
     deployMasterSwitch,
-    expectRevert
+    expectRevert,
+    expectEvent
 } from "../../utils";
 import { PaymentSwitchNative, MasterSwitch, SecurityContext } from "typechain";
 import { applySecurityRoles } from "../../utils/security";
@@ -146,14 +147,14 @@ describe("PaymentSwitch Native: Place Payments}", function () {
             const amount: number = 100;
             
             const payment = {
+                receiver: addresses.seller1,
                 id: 1,
                 payer: addresses.buyer1,
-                amount,
-                refundAmount: 0
+                amount
             };
 
             await expectRevert(
-                () => paymentSwitch.placePayment(addresses.seller1, payment, {value:amount-1}),
+                () => paymentSwitch.placePayment(payment, {value:amount-1}),
                 "PaymentAmountMismatch"
             ); 
         });
@@ -162,25 +163,38 @@ describe("PaymentSwitch Native: Place Payments}", function () {
             const amount: number = 100;
 
             const payment = {
+                receiver: addresses.seller1,
                 id: 1,
                 payer: addresses.buyer1,
-                amount,
-                refundAmount: 0
+                amount
             };
 
-            await paymentSwitch.placePayment(addresses.seller1, payment, { value: amount + 1 })
-            await expect(paymentSwitch.placePayment(addresses.seller1, payment, { value: amount + 1 })).to.not.be.reverted;
-        }); 
+            await paymentSwitch.placePayment(payment, { value: amount + 1 })
+            await expect(paymentSwitch.placePayment(payment, { value: amount + 1 })).to.not.be.reverted;
+        });
 
         it("cannot add to existing payment if receiver address differs", async function () {
             const id = await paymentUtil.placePayment(addresses.seller1, addresses.buyer1, 100);
 
-            //TODO: (TEST) specify what it gets reverted with
-            await expect(paymentUtil.addToExistingPayment(id, addresses.seller2, addresses.buyer1, 50)).to.be.reverted;
+            await expectRevert(
+                () => paymentUtil.addToExistingPayment(id, addresses.seller2, addresses.buyer1, 50),
+                "ReceiverMismatch"
+            );
         });
-    });
+    }); 
 
     describe("Events", function () {
-        //TODO: (TEST) implement
+        it.skip("placing a payment emits PaymentPlaced", async function () {
+            const amount: number = 100;
+            await expectEvent(
+                () => paymentSwitch.placePayment({
+                    receiver: addresses.seller1, 
+                    id: 1,
+                    payer: addresses.buyer1,
+                    amount
+                },  { value: amount}),
+                "PaymentPlaced", [addresses.buyer1, addresses.seller1, amount]
+            )
+        });
     });
 });

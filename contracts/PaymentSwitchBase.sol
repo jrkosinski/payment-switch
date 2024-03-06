@@ -7,12 +7,12 @@ import "./interfaces/IMasterSwitch.sol";
 import "./utils/CarefulMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol"; 
 import "@openzeppelin/contracts/security/Pausable.sol"; 
+import "./PaymentInput.sol"; 
 
 //TODO: (HIGH) a way to change master switch address 
 //TODO: (MED) a way to retrieve payment that's been unclaimed 
-//TODO: (MED) implement pausing 
 //TODO: (MED) make upgradeable
-
+    
 /**
  * @title PaymentSwitchBase
  * 
@@ -94,12 +94,22 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard, 
         return paymentBuckets[receiver]; 
     }
     
-    //TODO: (COM) comment
+    /**
+     * Pauses the contract, prevents most actions. 
+     * 
+     * Emits: 
+     * - {Pausable-Paused}
+     */
     function pause() external onlyRole(PAUSER_ROLE) {
         _pause();
     }
     
-    //TODO: (COM) comment
+    /**
+     * Pauses the contract, re-enabling most actions (if initially paused when called).
+     * 
+     * Emits: 
+     * - {Pausable-Unpaused}
+     */
     function unpause() external onlyRole(PAUSER_ROLE) {
         _unpause();
     }
@@ -379,18 +389,20 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard, 
     /**
      * This will be called by derived contracts after a payment has been recieved. 
      * 
-     * @param seller The seller in the payment received. 
-     * @param payment Full payment data. 
+     * Emits: 
+     * - {PaymentPlaced}
+     * 
+     * @param payment Full payment input data. 
      */
-    function _onPaymentReceived(address seller, Payment calldata payment) internal virtual {
+    function _onPaymentReceived(PaymentInput calldata payment) internal virtual {
         
         //add payment to book
-        _addPayment(seller, payment.id, payment.payer, payment.amount);     
+        _addPayment(payment.receiver, payment.id, payment.payer, payment.amount);     
         
         //event 
         emit PaymentPlaced( //TODO: (MED) add payment id 
             payment.payer, 
-            seller, 
+            payment.receiver, 
             payment.amount
         );
     }

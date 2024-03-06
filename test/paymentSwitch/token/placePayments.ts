@@ -6,7 +6,8 @@ import {
     deployPaymentSwitchToken,
     deployTestToken,
     deployMasterSwitch,
-    expectRevert
+    expectRevert,
+    expectEvent
 } from "../../utils";
 import { PaymentSwitchToken, TestToken, MasterSwitch, SecurityContext } from "typechain";
 import { applySecurityRoles } from "../../utils/security";
@@ -147,16 +148,16 @@ describe("PaymentSwitch Token: Place Payments}", function () {
         it("cannot place a payment when the amount approved is too little", async function () {
             const amount: number = 100;
             const payment = {
+                receiver: addresses.seller1,
                 id: 1,
                 payer: addresses.buyer1,
-                amount,
-                refundAmount: 0
+                amount
             };
             
             await token.approve(paymentSwitch.target.toString(), amount-1);
             
             await expectRevert(
-                () => paymentSwitch.placePayment(addresses.seller1, payment),
+                () => paymentSwitch.placePayment(payment),
                 "ERC20: insufficient allowance"
             ); 
         });
@@ -168,11 +169,19 @@ describe("PaymentSwitch Token: Place Payments}", function () {
         it("cannot add to existing payment if receiver address differs", async function () {
             const id = await paymentUtil.placePayment(addresses.seller1, addresses.buyer1, 100);
 
-            await expect(paymentUtil.addToExistingPayment(id, addresses.seller2, addresses.buyer1, 50)).to.be.reverted;
+            await expectRevert(
+                () => paymentUtil.addToExistingPayment(id, addresses.seller2, addresses.buyer1, 50), 
+                "ReceiverMismatch"
+            );
         });
     });
 
     describe("Events", function () {
-        //TODO: (TEST) implement
+        it.skip("placing a payment emits PaymentPlaced", async function () {
+            await expectEvent(
+                () => paymentUtil.placePayment(addresses.seller1, addresses.buyer1, 100), 
+                "PaymentPlaced", [addresses.buyer1, addresses.seller1, 100]
+            )
+        });
     });
 });

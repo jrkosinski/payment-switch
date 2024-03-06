@@ -23,23 +23,42 @@ contract PaymentSwitchToken is PaymentSwitchBase
      * Constructor. 
      * 
      * @param masterSwitch Address of the master switch contract.
-     * @param tokenAddress Address of the token to be used as payment.
+     * @param _tokenAddress Address of the token to be used as payment.
      */
-    constructor(IMasterSwitch masterSwitch, IERC20 tokenAddress) PaymentSwitchBase(masterSwitch) {
-        token = tokenAddress;
+    constructor(IMasterSwitch masterSwitch, IERC20 _tokenAddress) PaymentSwitchBase(masterSwitch) {
+        token = _tokenAddress;
     }
+    
+    function tokenAddress() external view returns (address) { return address(token); }
     
     /**
      * Accepts a payment from a seller to a buyer. 
      * 
-     * @param seller Address to which the majority of the payment (minus fee) is due. 
      * @param payment Encapsulates the payment data. 
      */
-    function placePayment(address seller, Payment calldata payment) external whenNotPaused {
+    function placePayment(PaymentInput calldata payment) external whenNotPaused {
         //amount should have been pre-approved; otherwise will revert 
         token.transferFrom(msg.sender, address(this), payment.amount);
         
-        _onPaymentReceived(seller, payment);
+        _onPaymentReceived(payment);
+    }
+    
+    /**
+     * 
+     */
+    function placeMultiPayments(PaymentInput[] calldata payments) external payable whenNotPaused {
+        uint256 total = 0;
+        
+        //get total amount of all payments, check against amount sent 
+        for(uint256 n=0; n<payments.length; n++) {
+            total += payments[n].amount;
+            _onPaymentReceived(payments[n]);
+        }
+        
+        //if payment is insufficient, revert 
+        if (total > msg.value) {
+            revert PaymentAmountMismatch(total, msg.value);
+        }
     }
     
     /**
