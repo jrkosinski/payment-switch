@@ -25,7 +25,7 @@ export class PaymentUtil {
             await this.token.approve(this.paymentSwitch.target.toString(), amount);
             await this.paymentSwitch.placePayment({ 
                 receiver: seller.toString(), 
-                id: this.paymentId++, 
+                id: ++this.paymentId, 
                 payer: buyer.toString(), 
                 amount
             }); 
@@ -33,12 +33,12 @@ export class PaymentUtil {
         else {
             await this.paymentSwitch.placePayment({
                 receiver: seller.toString(), 
-                id: this.paymentId++,
+                id: ++this.paymentId,
                 payer: buyer.toString(),
                 amount, 
             }, {value:amount}); 
         }
-        return this.paymentId - 1;
+        return this.paymentId;
     }
 
     async placePayments(

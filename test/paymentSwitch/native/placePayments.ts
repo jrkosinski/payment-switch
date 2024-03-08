@@ -6,7 +6,8 @@ import {
     deployPaymentSwitchNative,
     deployMasterSwitch,
     expectRevert,
-    expectEvent
+    expectEvent,
+    listenForEvent
 } from "../../utils";
 import { PaymentSwitchNative, MasterSwitch, SecurityContext } from "typechain";
 import { applySecurityRoles } from "../../utils/security";
@@ -17,7 +18,7 @@ import { PaymentUtil } from "../../utils/PaymentUtil";
 import * as constants from "../../constants";
 
 
-describe("PaymentSwitch Native: Place Payments}", function () {
+describe("PaymentSwitch Native: Place Payments", function () {
     let paymentSwitch: PaymentSwitchNative;
     let masterSwitch: MasterSwitch;
     let securityContext: SecurityContext;
@@ -184,17 +185,20 @@ describe("PaymentSwitch Native: Place Payments}", function () {
     }); 
 
     describe("Events", function () {
-        it.skip("placing a payment emits PaymentPlaced", async function () {
+        it("placing a payment emits PaymentPlaced", async function () {
             const amount: number = 100;
-            await expectEvent(
-                () => paymentSwitch.placePayment({
-                    receiver: addresses.seller1, 
-                    id: 1,
-                    payer: addresses.buyer1,
-                    amount
-                },  { value: amount}),
-                "PaymentPlaced", [addresses.buyer1, addresses.seller1, amount]
-            )
+            const eventOutput = await listenForEvent(
+                paymentSwitch,
+                "PaymentPlaced",
+                () => paymentUtil.placePayment(addresses.seller1, addresses.buyer1, amount),
+                ["payer", "receiver", "amount", "id"]
+            );
+
+            expect(eventOutput.eventFired).to.be.true;
+            expect(eventOutput.payer).to.equal(addresses.buyer1);
+            expect(eventOutput.receiver).to.equal(addresses.seller1);
+            expect(parseInt(eventOutput.amount)).to.equal(amount);
+            expect(parseInt(eventOutput.id)).to.be.greaterThan(0);
         });
     });
 });

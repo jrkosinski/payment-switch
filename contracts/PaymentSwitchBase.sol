@@ -37,7 +37,8 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard, 
     event PaymentPlaced (
         address indexed payer, 
         address indexed receiver, 
-        uint256 amount
+        uint256 amount, 
+        uint256 id
     );
     event PaymentSent ( 
         address indexed receiver, 
@@ -400,10 +401,11 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard, 
         _addPayment(payment.receiver, payment.id, payment.payer, payment.amount);     
         
         //event 
-        emit PaymentPlaced( //TODO: (MED) add payment id 
+        emit PaymentPlaced( 
             payment.payer, 
             payment.receiver, 
-            payment.amount
+            payment.amount, 
+            payment.id
         );
     }
 }

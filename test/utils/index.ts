@@ -15,7 +15,6 @@ export async function expectEvent(funcCall: any, eventName: string, expectedValu
     //call the remote function 
     const tx = await funcCall();
     const rc = await tx.wait();
-    console.log(rc);
     
     //expect that the event was fired
     const evt = rc.events.find((e: any) => e.event === eventName);

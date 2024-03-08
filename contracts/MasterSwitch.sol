@@ -107,16 +107,7 @@ contract MasterSwitch is HasSecurityContext
             IPaymentSwitch paymentSwitch = IPaymentSwitch(tokensToSwitches[currency]);
             PaymentInput[] memory payments = multiPayments[i].payments; 
             
-            for (uint256 n=0; n<payments.length; n++) {
-                
-                if (currency != address(0)) {
-                    IERC20 token = IERC20(currency);
-                    token.approve(address(paymentSwitch), payments[n].amount); 
-                }
-            
-                //call for individual payments
-            }
-                
+            //call for individual payments
             paymentSwitch.placeMultiPayments(payments);
         }
     }
