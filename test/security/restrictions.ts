@@ -23,9 +23,13 @@ describe("Security: Restrictions", function () {
     let accounts: any = {};
 
     this.beforeEach(async function () {
-        let acc = await getTestAccounts(['admin', 'seller', 'buyer', 'dao', 'system', 'pauser', 'upgrader', 'approver', 'refunder']);
+        let acc = await getTestAccounts(['admin', 'seller1', 'seller2', 'buyer1', 'buyer2', 'dao', 'system', 'pauser', 'upgrader', 'approver', 'refunder']);
         addresses = acc.addresses;
         accounts = acc.accounts;
+        addresses.seller = addresses.seller1;
+        addresses.buyer = addresses.buyer1;
+        accounts.seller = accounts.seller1;
+        accounts.buyer = accounts.buyer1;
 
         securityContext = await deploySecurityContext(addresses.admin);
         securityContext2 = await deploySecurityContext(addresses.admin);
@@ -57,7 +61,15 @@ describe("Security: Restrictions", function () {
             });
 
             it("approver can approve batches of payments", async function () {
-                //TODO: (TEST) implement
+                //place payments to two different sellers
+                await paymentUtil.placePayments(
+                    [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller2],
+                    [addresses.buyer1, addresses.buyer2, addresses.buyer1, addresses.buyer2],
+                    [100, 200, 300, 400]
+                );
+
+                await paymentSwitch.connect(accounts.approver).freezePendingBatch([addresses.seller1, addresses.seller2]);
+                await expect(paymentSwitch.connect(accounts.approver).approvePaymentsBatch([addresses.seller1, addresses.seller2])).to.not.be.reverted;
             });
 
             it("approver can review payments", async function () {
@@ -88,7 +100,14 @@ describe("Security: Restrictions", function () {
             });
 
             it("approver can freeze a pending batch", async function () {
-                //TODO: (TEST) implement
+                //place payments to two different sellers
+                await paymentUtil.placePayments(
+                    [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller2],
+                    [addresses.buyer1, addresses.buyer2, addresses.buyer1, addresses.buyer2],
+                    [100, 200, 300, 400]
+                );
+
+                await expect(paymentSwitch.connect(accounts.approver).freezePendingBatch([addresses.seller1, addresses.seller2])).to.not.be.reverted;
             });
 
             it("refunder can refund payment", async function () {
@@ -116,7 +135,16 @@ describe("Security: Restrictions", function () {
             });
 
             it("dao can process batches of payments", async function () {
-                
+                //place payments to two different sellers
+                await paymentUtil.placePayments( 
+                    [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller2],
+                    [addresses.buyer1, addresses.buyer2, addresses.buyer1, addresses.buyer2],
+                    [100, 200, 300, 400]
+                );
+
+                await paymentSwitch.connect(accounts.approver).freezePendingBatch([addresses.seller1, addresses.seller2]);
+                await paymentSwitch.connect(accounts.approver).approvePaymentsBatch([addresses.seller1, addresses.seller2]);
+                await expect(paymentSwitch.connect(accounts.dao).processPaymentsBatch([addresses.seller1, addresses.seller2])).to.not.be.reverted;
             });
 
             it("dao can push payments", async function () {
@@ -147,7 +175,19 @@ describe("Security: Restrictions", function () {
             });
 
             it("non-approver cannot approve batches of payments", async function () {
-                //TODO: (TEST) implement
+                //place payments to two different sellers
+                await paymentUtil.placePayments(
+                    [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller2],
+                    [addresses.buyer1, addresses.buyer2, addresses.buyer1, addresses.buyer2],
+                    [100, 200, 300, 400]
+                );
+
+                await paymentSwitch.connect(accounts.approver).freezePendingBatch([addresses.seller1, addresses.seller2]);
+
+                await expectRevert(
+                    () => paymentSwitch.connect(accounts.pauser).approvePaymentsBatch([addresses.seller1, addresses.seller2]),
+                    constants.errorMessages.UNAUTHORIZED_ACCESS
+                );
             });
 
             it("non-approver cannot review payments", async function () {
@@ -184,7 +224,17 @@ describe("Security: Restrictions", function () {
             });
 
             it("non-approver cannot freeze a pending batch", async function () {
-                //TODO: (TEST) implement
+                //place payments to two different sellers
+                await paymentUtil.placePayments(
+                    [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller2],
+                    [addresses.buyer1, addresses.buyer2, addresses.buyer1, addresses.buyer2],
+                    [100, 200, 300, 400]
+                );
+
+                await expectRevert(
+                    () => paymentSwitch.connect(accounts.seller).freezePendingBatch([addresses.seller1, addresses.seller2]),
+                    constants.errorMessages.UNAUTHORIZED_ACCESS
+                );
             });
 
             it("non-refunder cannot refund payment", async function () {
@@ -224,6 +274,20 @@ describe("Security: Restrictions", function () {
             });
 
             it("non-dao cannot process batches of payments", async function () {
+                //place payments to two different sellers
+                await paymentUtil.placePayments(
+                    [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller2],
+                    [addresses.buyer1, addresses.buyer2, addresses.buyer1, addresses.buyer2],
+                    [100, 200, 300, 400]
+                );
+
+                await paymentSwitch.connect(accounts.approver).freezePendingBatch([addresses.seller1, addresses.seller2]);
+                await paymentSwitch.connect(accounts.approver).approvePaymentsBatch([addresses.seller1, addresses.seller2]);
+
+                await expectRevert(
+                    () => paymentSwitch.connect(accounts.pauser).processPaymentsBatch([addresses.seller1, addresses.seller2]),
+                    constants.errorMessages.UNAUTHORIZED_ACCESS
+                );
             });
 
             it("non-dao cannot push payments", async function () {
