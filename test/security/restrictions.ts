@@ -51,7 +51,7 @@ describe("Security: Restrictions", function () {
                 
                 await paymentUtil.placePayments(
                     [receiver, receiver], 
-                    [addresses.buyer, addresses.buyer],
+                    [accounts.buyer, accounts.buyer],
                     [100, 200]
                 );
                 
@@ -64,7 +64,7 @@ describe("Security: Restrictions", function () {
                 //place payments to two different sellers
                 await paymentUtil.placePayments(
                     [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller2],
-                    [addresses.buyer1, addresses.buyer2, addresses.buyer1, addresses.buyer2],
+                    [accounts.buyer1, accounts.buyer2, accounts.buyer1, accounts.buyer2],
                     [100, 200, 300, 400]
                 );
 
@@ -77,7 +77,7 @@ describe("Security: Restrictions", function () {
 
                 const ids: number[] = await paymentUtil.placePayments(
                     [receiver, receiver],
-                    [addresses.buyer, addresses.buyer],
+                    [accounts.buyer, accounts.buyer],
                     [100, 200]
                 );
 
@@ -92,7 +92,7 @@ describe("Security: Restrictions", function () {
 
                 await paymentUtil.placePayments(
                     [receiver, receiver],
-                    [addresses.buyer, addresses.buyer],
+                    [accounts.buyer, accounts.buyer],
                     [100, 200]
                 );
 
@@ -103,7 +103,7 @@ describe("Security: Restrictions", function () {
                 //place payments to two different sellers
                 await paymentUtil.placePayments(
                     [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller2],
-                    [addresses.buyer1, addresses.buyer2, addresses.buyer1, addresses.buyer2],
+                    [accounts.buyer1, accounts.buyer2, accounts.buyer1, accounts.buyer2],
                     [100, 200, 300, 400]
                 );
 
@@ -115,7 +115,7 @@ describe("Security: Restrictions", function () {
 
                 const ids = await paymentUtil.placePayments(
                     [receiver, receiver],
-                    [addresses.buyer, addresses.buyer],
+                    [accounts.buyer, accounts.buyer],
                     [100, 200]
                 );
                 
@@ -138,7 +138,7 @@ describe("Security: Restrictions", function () {
                 //place payments to two different sellers
                 await paymentUtil.placePayments( 
                     [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller2],
-                    [addresses.buyer1, addresses.buyer2, addresses.buyer1, addresses.buyer2],
+                    [accounts.buyer1, accounts.buyer2, accounts.buyer1, accounts.buyer2],
                     [100, 200, 300, 400]
                 );
 
@@ -162,7 +162,7 @@ describe("Security: Restrictions", function () {
 
                 await paymentUtil.placePayments(
                     [receiver, receiver],
-                    [addresses.buyer, addresses.buyer],
+                    [accounts.buyer, accounts.buyer],
                     [100, 200]
                 );
 
@@ -178,7 +178,7 @@ describe("Security: Restrictions", function () {
                 //place payments to two different sellers
                 await paymentUtil.placePayments(
                     [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller2],
-                    [addresses.buyer1, addresses.buyer2, addresses.buyer1, addresses.buyer2],
+                    [accounts.buyer1, accounts.buyer2, accounts.buyer1, accounts.buyer2],
                     [100, 200, 300, 400]
                 );
 
@@ -195,7 +195,7 @@ describe("Security: Restrictions", function () {
 
                 const ids: number[] = await paymentUtil.placePayments(
                     [receiver, receiver],
-                    [addresses.buyer, addresses.buyer],
+                    [accounts.buyer, accounts.buyer],
                     [100, 200]
                 );
 
@@ -213,7 +213,7 @@ describe("Security: Restrictions", function () {
 
                 await paymentUtil.placePayments(
                     [receiver, receiver],
-                    [addresses.buyer, addresses.buyer],
+                    [accounts.buyer, accounts.buyer],
                     [100, 200]
                 );
 
@@ -227,7 +227,7 @@ describe("Security: Restrictions", function () {
                 //place payments to two different sellers
                 await paymentUtil.placePayments(
                     [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller2],
-                    [addresses.buyer1, addresses.buyer2, addresses.buyer1, addresses.buyer2],
+                    [accounts.buyer1, accounts.buyer2, accounts.buyer1, accounts.buyer2],
                     [100, 200, 300, 400]
                 );
 
@@ -242,7 +242,7 @@ describe("Security: Restrictions", function () {
 
                 const ids = await paymentUtil.placePayments(
                     [receiver, receiver],
-                    [addresses.buyer, addresses.buyer],
+                    [accounts.buyer, accounts.buyer],
                     [100, 200]
                 );
 
@@ -277,7 +277,7 @@ describe("Security: Restrictions", function () {
                 //place payments to two different sellers
                 await paymentUtil.placePayments(
                     [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller2],
-                    [addresses.buyer1, addresses.buyer2, addresses.buyer1, addresses.buyer2],
+                    [accounts.buyer1, accounts.buyer2, accounts.buyer1, accounts.buyer2],
                     [100, 200, 300, 400]
                 );
 

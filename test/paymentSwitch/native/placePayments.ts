@@ -11,7 +11,7 @@ import {
 } from "../../utils";
 import { PaymentSwitchNative, MasterSwitch, SecurityContext } from "typechain";
 import { applySecurityRoles } from "../../utils/security";
-import { Addressable } from "ethers";
+import { Addressable, Signer } from "ethers";
 import { bucketStates } from "../../constants";
 import { IPayment } from "../../utils/IPayment";
 import { PaymentUtil } from "../../utils/PaymentUtil"; 
@@ -26,6 +26,7 @@ describe("PaymentSwitch Native: Place Payments", function () {
     let paymentUtil: PaymentUtil; 
 
     let addresses: any = {};
+    let accounts: any = {};
 
     this.beforeEach(async function () {
         let acc = await getTestAccounts([
@@ -33,6 +34,7 @@ describe("PaymentSwitch Native: Place Payments", function () {
             'seller1', 'seller2', 'seller3', 'buyer1', 'buyer2', 'buyer3'
         ]);
         addresses = acc.addresses;
+        accounts = acc.accounts;
         securityContext = await deploySecurityContext(addresses.admin);
 
         //apply security roles
@@ -52,7 +54,7 @@ describe("PaymentSwitch Native: Place Payments", function () {
             expect(parseInt(await paymentSwitch.getTotalInState(receiver, bucketStates.PENDING))).to.equal(0);
 
             //make payment
-            const paymentId = await paymentUtil.placePayment(receiver, addresses.buyer1, amount);
+            const paymentId = await paymentUtil.placePayment(receiver, accounts.buyer1, amount);
 
             //payment now exists
             expect(await paymentSwitch.paymentExists(paymentId)).to.be.true;
@@ -71,7 +73,7 @@ describe("PaymentSwitch Native: Place Payments", function () {
 
         it("place multiple payments for same seller", async function () {
             const amounts: number[] = [100, 200, 300];
-            const buyers: string[] = [addresses.buyer1, addresses.buyer2, addresses.buyer1];
+            const buyers: Signer[] = [accounts.buyer1, accounts.buyer2, accounts.buyer1];
             const paymentIds: number[] = [];
             const receiver: string = addresses.seller1;
 
@@ -90,7 +92,7 @@ describe("PaymentSwitch Native: Place Payments", function () {
 
                 //check that amount is recorded 
                 const payment: IPayment = await paymentUtil.getPayment(paymentIds[n]);
-                expect(payment.payer).to.equal(buyers[n]);
+                expect(payment.payer).to.equal(await buyers[n].getAddress());
                 expect(payment.amount).to.equal(amounts[n]);
                 expect(payment.id).to.equal(paymentIds[n]);
                 expect(payment.refundAmount).to.equal(0);
@@ -111,7 +113,7 @@ describe("PaymentSwitch Native: Place Payments", function () {
             expect(parseInt(await paymentSwitch.getTotalInState(receiver, bucketStates.PENDING))).to.equal(0);
 
             //make payment
-            const paymentId = await paymentUtil.placePayment(receiver, addresses.buyer1, amount);
+            const paymentId = await paymentUtil.placePayment(receiver, accounts.buyer1, amount);
 
             //payment now exists
             expect(await paymentSwitch.paymentExists(paymentId)).to.be.true;
@@ -128,7 +130,7 @@ describe("PaymentSwitch Native: Place Payments", function () {
             expect(await paymentUtil.getBalance(paymentSwitch.target)).to.equal(amount);
             
             //add to the payment 
-            await paymentUtil.addToExistingPayment(paymentId, receiver, addresses.buyer1, amount * 2);
+            await paymentUtil.addToExistingPayment(paymentId, receiver, accounts.buyer1, amount * 2);
 
             //check that amount is recorded 
             payment = await paymentUtil.getPayment(paymentId);
@@ -175,10 +177,10 @@ describe("PaymentSwitch Native: Place Payments", function () {
         });
 
         it("cannot add to existing payment if receiver address differs", async function () {
-            const id = await paymentUtil.placePayment(addresses.seller1, addresses.buyer1, 100);
+            const id = await paymentUtil.placePayment(addresses.seller1, accounts.buyer1, 100);
 
             await expectRevert(
-                () => paymentUtil.addToExistingPayment(id, addresses.seller2, addresses.buyer1, 50),
+                () => paymentUtil.addToExistingPayment(id, addresses.seller2, accounts.buyer1, 50),
                 "ReceiverMismatch"
             );
         });
@@ -190,7 +192,7 @@ describe("PaymentSwitch Native: Place Payments", function () {
             const eventOutput = await listenForEvent(
                 paymentSwitch,
                 "PaymentPlaced",
-                () => paymentUtil.placePayment(addresses.seller1, addresses.buyer1, amount),
+                () => paymentUtil.placePayment(addresses.seller1, accounts.buyer1, amount),
                 ["payer", "receiver", "amount", "id"]
             );
 

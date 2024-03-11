@@ -21,6 +21,7 @@ describe("PaymentSwitch Native: Process Buckets", function () {
     let _paymentId: number = 1;
     let paymentUtil: PaymentUtil;
     let addresses: any = {};
+    let accounts: any = {};
 
     this.beforeEach(async function () {
         let acc = await getTestAccounts([
@@ -28,6 +29,7 @@ describe("PaymentSwitch Native: Process Buckets", function () {
             'seller1', 'seller2', 'seller3', 'buyer1', 'buyer2', 'buyer3'
         ]);
         addresses = acc.addresses;
+        accounts = acc.accounts;
         securityContext = await deploySecurityContext(addresses.admin);
 
         //apply security roles
@@ -49,7 +51,7 @@ describe("PaymentSwitch Native: Process Buckets", function () {
             //place a bunch of payments 
             const ids: number[] = await paymentUtil.placePayments(
                 [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller3],
-                [addresses.buyer1, addresses.buyer2, addresses.buyer3, addresses.buyer3],
+                [accounts.buyer1, accounts.buyer2, accounts.buyer3, accounts.buyer3],
                 [1000, 4000, 3000, 2000]
             ); 
 
@@ -93,7 +95,7 @@ describe("PaymentSwitch Native: Process Buckets", function () {
             //place a bunch of payments 
             const ids: number[] = await paymentUtil.placePayments(
                 [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller3],
-                [addresses.buyer1, addresses.buyer2, addresses.buyer3, addresses.buyer3],
+                [accounts.buyer1, accounts.buyer2, accounts.buyer3, accounts.buyer3],
                 [1000, 4000, 3000, 2000]
             );
 
@@ -127,7 +129,7 @@ describe("PaymentSwitch Native: Process Buckets", function () {
             //place a bunch of payments 
             const ids: number[] = await paymentUtil.placePayments(
                 [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller3],
-                [addresses.buyer1, addresses.buyer2, addresses.buyer3, addresses.buyer3],
+                [accounts.buyer1, accounts.buyer2, accounts.buyer3, accounts.buyer3],
                 [1000, 4000, 3000, 2000]
             );
 
@@ -148,7 +150,7 @@ describe("PaymentSwitch Native: Process Buckets", function () {
             //place a bunch of payments 
             const ids2: number[] = await paymentUtil.placePayments(
                 [addresses.seller1, addresses.seller1, addresses.seller2, addresses.seller3],
-                [addresses.buyer1, addresses.buyer2, addresses.buyer3, addresses.buyer3],
+                [accounts.buyer1, accounts.buyer2, accounts.buyer3, accounts.buyer3],
                 [1000, 4000, 3000, 2000]
             );
 
