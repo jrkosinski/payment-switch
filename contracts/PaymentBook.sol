@@ -296,6 +296,8 @@ contract PaymentBook
         uint256 startIndex = _getBucketIndexWithState(receiver, STATE_APPROVED); 
         if (startIndex > 0) {
             for (uint256 n=startIndex; n>0; n--) {
+                if (paymentBuckets[receiver][n-1].state != STATE_APPROVED)
+                    break;
                 paymentBuckets[receiver][n-1].state = STATE_PROCESSED;
             }
         }

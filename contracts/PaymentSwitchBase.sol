@@ -95,6 +95,11 @@ contract PaymentSwitchBase is HasSecurityContext, PaymentBook, ReentrancyGuard, 
         return paymentBuckets[receiver]; 
     }
     
+    //TODO: (COM) comment
+    function getAmountToPayOut(address receiver) public view returns (uint256) {
+        return toPayOut[receiver]; 
+    }
+    
     /**
      * Pauses the contract, prevents most actions. 
      * 
