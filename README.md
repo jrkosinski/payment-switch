@@ -1,4 +1,10 @@
 # Payment Switch 
+---
+The Payment Switch fulfills these roles: 
+- [X] Managed Escrow between buyer/seller, with marketplace/DAO as the arbiter
+- [X] Escrow storage and reference pipeline (manages Escrow Lifecycle) 
+
+---
 
 ## Setup & Operation
 
